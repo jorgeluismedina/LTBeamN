@@ -1,0 +1,43 @@
+
+import numpy as np
+import scipy as sp
+from .base_elem import FrameElement
+
+class Truss2D(FrameElement):
+    def __init__(self, mater, section, coord, conec, dof):
+        super().__init__(mater, section, coord, conec, dof)
+        vector = self.coord[1] - self.coord[0]
+        self.length = sp.linalg.norm(vector)
+        self.dirvec = vector/self.length
+        self.stress = 0.0
+        self.yielded = False
+        self.init_element()
+    
+    def init_element(self):
+        c, s = self.dirvec
+        cc = c*c
+        ss = s*s
+        cs = c*s
+        EA_L = self.mater.elast * self.section.xarea / self.length
+        self.stiff = EA_L * np.array([[cc, cs, -cc, -cs],
+                                      [cs, ss, -cs, -ss],
+                                      [-cc, -cs, cc, cs],
+                                      [-cs, -ss, cs, ss]])
+        
+        pAL = self.mater.dense * self.section.xarea * self.length
+        self.mass = pAL/6 * np.array([[2*cc, 2*cs, cc, cs],
+                                      [2*cs, 2*ss, cs, ss],
+                                      [cc, cs, 2*cc, 2*cs],
+                                      [cs, ss, 2*cs, 2*ss]])
+
+    def calculate_forces(self, glob_disps):
+        EA_L = self.mater.elast * self.section.xarea / self.length
+        c, s = self.dirvec
+        B = np.array([-c, -s, c, s])
+        self.force = EA_L * B @ glob_disps
+    
+    def calc_stress(self, glob_disps):
+        E_L = self.mater.elast / self.length
+        c, s = self.dirvec
+        B = np.array([-c, -s, c, s])
+        return E_L * B @ glob_disps
