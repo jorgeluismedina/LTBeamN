@@ -1,15 +1,15 @@
 
 import numpy as np
 import scipy as sp
-from .base_elem import FrameElement
+from .base_beam import Beam
 from ..shape_funcs import shape_beam, deriv1beam, deriv2beam
 
-class LTBeamN(FrameElement):
-    def __init__(self, mater, section, coord, conec, dof):
-        super().__init__(mater, section, coord, conec, dof)
+class LTBeamN(Beam):
+    def __init__(self, mater, section, coord, conec, verax_dof, lator_dof):
+        super().__init__(mater, section, coord, conec, verax_dof, lator_dof)
         self.init_element()
 
-    '''
+    #'''
     def get_trans_mat(self):
         c, s = self.dirvec
         rmatx = np.array([[c, s],[-s, c]])
@@ -18,7 +18,7 @@ class LTBeamN(FrameElement):
         T[3:5, 3:5] = rmatx
 
         return T
-    '''
+    #'''
     #def get_const_mat(self, r):
 
 

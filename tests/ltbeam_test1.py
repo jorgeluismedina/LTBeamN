@@ -8,14 +8,15 @@ import numpy as np
 import scipy as sp
 
 import matplotlib.pyplot as plt
-from ltbeamn.femclass import StabilityModel, Model
-from ltbeamn.material import Material
-from ltbeamn.sections import ISection_BS, ISection_MS
-from ltbeamn.solvers import solve_linear_static2, solve_stability, buckling_modes, check_symmetric
-from ltbeamn.plotting import plot_buckling_modes, plot_1d_diagram
+from src.model import StabilityModel
+from src.material import Material
+from src.sections import ISection_BS, ISection_MS
+from src.solvers.static import StaticSolver
+from src.solvers.stability import StabilitySolver
+from src.plotting import plot_buckling_modes, plot_1d_diagram
 
 # Materiales
-material1 = Material(elast=2.1e11, poiss=0.2, dense=1.0) #[N/m2]
+material1 = Material(E=2.1e11, nu=0.2, dens=1.0) #[N/m2]
 materials = [material1]
 
 # Secciones
@@ -26,80 +27,99 @@ sect2 = ISection_MS(h=0.3, bf1=0.2, bf2=0.12,
                     r1=0.01, r2=0.01) #[m]
 
 sections = [sect1, sect2]
-
-# Beam Length
-L = 5 #[m]
-nelems = 10
-
-coordinates = np.linspace(0, L, nelems+1)[:,None] 
 sect1.summary()
 #sect2.summary()
 
-mod = StabilityModel(ndofn1=3, ndofn2=4)
-mod.add_nodes(coordinates)
-mod.add_materials(materials)
-mod.add_sections(sections)
-
-for j in range(nelems):
-    mod.add_element('LTBeam', material1, sect1, [j, j+1])
 
 
-mod.add_node_restraint1(0, [1, 1, 0]) # 1 significa grado de libertad restricto y 0 libre 
-mod.add_node_restraint1(nelems, [1, 1, 0])
+# ----- CONSTRUCCION DE LA MALLA --------
+L = 5 #[m]
+nelems = 25 #Con 25 elementos ya se alcanza el valor teorico de momento critico
 
-mod.add_node_restraint2(0, [1, 0, 1, 0]) # 1 significa grado de libertad restricto y 0 libre 
-mod.add_node_restraint2(nelems, [1, 0, 1, 0])
+# Coordenadas de nodos
+coordinates = np.linspace(0, L, nelems+1)[:,None] 
+elements_data = []
 
-
-mod.set_restraints1()
-mod.set_restraints2()
-
-# ----- CARGAS --------
-#mod.add_node_load(0, [0, 0, -1]) # [N]
-#mod.add_node_load(nelems, [0, 0, 1]) # [N]
-
+# Informacion de elementos
 for e in range(nelems):
-    mod.add_elem_load(e, [0,-1,0,-1]) #[N]
+    elements_data.append([1, 0, 0, e, e+1]) # etype, mat_id, sec_id, nodei, nodej
+elements_data = np.array(elements_data)
 
 
-# SOLUCION
-glob_disps, reactions = solve_linear_static2(mod)
-#print(glob_disps.reshape((mod.nnods, mod.ndofn1)), '\n')
 
-mod.calculate_forces(glob_disps)
-for elem in mod.elems:
-    print(elem.forces) 
+# ----- RESTRICCIONES --------
+verax_restraints = np.array([
+    [0, 1, 1, 0],
+    [nelems, 1, 1, 0]
+])
+
+lator_restraints = np.array([
+    [0, 1, 0, 1, 0],
+    [nelems, 1, 0, 1, 0]
+])
 
 
-all_fields = mod.generate_fields()
-ax1 = plot_1d_diagram(mod.elems, all_fields[0],  all_fields[1])
-ax1 = plot_1d_diagram(mod.elems, all_fields[0],  all_fields[2])
-ax1 = plot_1d_diagram(mod.elems, all_fields[0],  all_fields[3])
+# ----- CARGAS NODALES --------
+# Carga de flexion pura unitaria
+nodal_loads = np.array([
+    [0, 0, 0, -1],
+    [nelems, 0, 0, 1]
+])
 
-print(2/3)
-print(float(2.0)/float(3.0))
+# ----- CARGAS DE ELEMENTO --------
+# Carga distribuida uniforme unitaria
+elem_loads = []
+for e in range(nelems):
+    elem_loads.append([e, 0, -1, 0, -1]) # id_elem, q1i, q2i, q1j, q2j
+elem_loads = np.array(elem_loads)
 
-# ESTABILIDAD
-vals, vecs = solve_stability(mod) 
 
-M_critico_num = vals[0]
 
-EIz = material1.elast * sect1.Iz
-GIt = material1.shear * sect1.It
-EIw = material1.elast * sect1.Iw
+
+# ----- CREACION Y SETEO DEL MODELO -------- 
+model = StabilityModel()
+model.add_materials(materials)
+model.add_sections(sections)
+model.add_nodes(coordinates)
+model.add_elements(elements_data)
+model.add_verax_restraints(verax_restraints)
+model.add_lator_restraints(lator_restraints)
+model.add_nodal_loads(nodal_loads)
+#mod.add_elem_loads(elem_loads)
+
+
+# ----- RESOLUCION DEL MODELO --------
+# Resolucion del problema estatico
+solver1 = StaticSolver(model)
+verax_disps, verax_react = solver1.solve()
+#print(model.elems[0].K0_ltr)
+#print(verax_disps.reshape(mod.nnods, mod.nvrx_dofn))
+
+# Resolcion del problema de estabilidad
+solver2 = StabilitySolver(model)
+vals, vecs = solver2.solve()
+modes = solver2.reconstruct_full_modes(vecs, nmodes=5)
+
+
+# verificacion para flexion pura
+EIz = material1.E * sect1.Iz
+GIt = material1.G * sect1.It
+EIw = material1.E * sect1.Iw
 M_critico_ana = np.pi / L * np.sqrt(EIz*GIt * (1 + (np.pi**2*EIw)/(L**2*GIt)))
+M_critico_num = vals[0]
 print(f"Momento Crítico Calculado: {M_critico_num/1000:.4f} kNm")
-#print(f"Momento Crítico Teorico: {M_critico_ana/1000:.4f} kNm")
+print(f"Momento Crítico Teorico: {M_critico_ana/1000:.4f} kNm")
+ 
 
 
-fig1 = plot_buckling_modes(vals, vecs, mod) 
+# ----- PLOTEO DE RESULTADOS --------
+# Problema estatico
+all_fields = solver1.generate_fields()
+plot_1d_diagram(model.elems, all_fields[0],  all_fields[1])
+plot_1d_diagram(model.elems, all_fields[0],  all_fields[2])
+plot_1d_diagram(model.elems, all_fields[0],  all_fields[3])
+
+
+# Problema de estabilidad
+plot_buckling_modes(vals, modes, model) 
 plt.show()
-
-
-'''
-Estoy programando un codigo de elementos finitos que resuelve vigas de seccion I monosimetricas en compresion y flexion y que a su vez hace un analisis de estabilidad elastico para encontrar cargas criticas y modos de pandeo. Mi objetivo es replicar el programa que realizo el autor de una articulo que no te paso ahora. El autor realizo el programa para calcular vigas uniformes y no-uniformes (secciones que varia linealmente). Mi plan inicial es programar primero para secciones no uniformes. Entonces tengo escrito el siguiente codigo que quiero que lo hagas mas elegante y eficiente y mas practico.
-'''
-
-#GIt = material1.shear * 7.32500e-7
-#M_critico_ana = np.pi / L * np.sqrt(EIz*GIt * (1 + (np.pi**2*EIw)/(L**2*GIt)))
-#print(f"Momento Crítico Teorico: {M_critico_ana/1000:.4f} kNm")
