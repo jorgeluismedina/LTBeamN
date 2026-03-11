@@ -66,12 +66,6 @@ nodal_loads = np.array([
     [nelems, 0, 0, 1]
 ])
 
-# ----- CARGAS DE ELEMENTO --------
-# Carga distribuida uniforme unitaria
-elem_loads = []
-for e in range(nelems):
-    elem_loads.append([e, 0, -1, 0, -1]) # id_elem, q1i, q2i, q1j, q2j
-elem_loads = np.array(elem_loads)
 
 
 
@@ -85,7 +79,6 @@ model.add_elements(elements_data)
 model.add_verax_restraints(verax_restraints)
 model.add_lator_restraints(lator_restraints)
 model.add_nodal_loads(nodal_loads)
-#mod.add_elem_loads(elem_loads)
 
 
 # ----- RESOLUCION DEL MODELO --------
@@ -97,8 +90,8 @@ verax_disps, verax_react = solver1.solve()
 
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)
-vals, vecs = solver2.solve()
-modes = solver2.reconstruct_full_modes(vecs, nmodes=5)
+mu_cr, modes = solver2.solve()
+modes = solver2.reconstruct_full_modes(modes, nmodes=5)
 
 
 # verificacion para flexion pura
@@ -106,7 +99,7 @@ EIz = material1.E * sect1.Iz
 GIt = material1.G * sect1.It
 EIw = material1.E * sect1.Iw
 M_critico_ana = np.pi / L * np.sqrt(EIz*GIt * (1 + (np.pi**2*EIw)/(L**2*GIt)))
-M_critico_num = vals[0]
+M_critico_num = mu_cr[0]
 print(f"Momento Crítico Calculado: {M_critico_num/1000:.4f} kNm")
 print(f"Momento Crítico Teorico: {M_critico_ana/1000:.4f} kNm")
  
@@ -121,5 +114,5 @@ plot_1d_diagram(model.elems, all_fields[0],  all_fields[3])
 
 
 # Problema de estabilidad
-plot_buckling_modes(vals, modes, model) 
+plot_buckling_modes(mu_cr, modes, model) 
 plt.show()

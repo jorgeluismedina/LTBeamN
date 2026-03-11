@@ -50,22 +50,27 @@ class StabilitySolver():
         K0_ff = self.K0[np.ix_(free, free)]
         Kg_ff = self.Kg[np.ix_(free, free)]
         
-        # Resuelve autovectores y autovalores
-        vals, vecs = sp.linalg.eig(K0_ff, -Kg_ff)
+        # Resuelve autovectores y autovalores 
+        # invirtiendo el problema (-Kg * phi = lambda * K0 * phi)
+        # lam_cr = 1 / mu_cr, donde mu_cr es la carga crítica de pandeo
+        lam_cr, modes = sp.linalg.eigh(-Kg_ff, K0_ff)
+        #vals, vecs = sp.linalg.eig(K0_ff, -Kg_ff)
 
         # solo autovalores reales positivos
-        vals = np.real(vals)
-        pos_indices = np.where(vals > 0)[0]
-        vals = vals[pos_indices]
-        vecs = vecs[:, pos_indices]
+        pos_indices = np.where(lam_cr > 1e-12)[0]
+        lam_cr = lam_cr[pos_indices]
+        modes  = modes[:, pos_indices]
+
+        # Calculo de mu_critico 
+        mu_cr = 1 / lam_cr
 
         # Ordenamiento de autovalores de manera creciente
-        idx = vals.argsort()
-        vals = vals[idx]
-        vecs = vecs[:, idx]
+        idx = mu_cr.argsort()
+        mu_cr = mu_cr[idx]
+        modes = modes[:, idx]
 
         # Los autovectores son columnas, cada columna es un modo de pandeo
-        return vals, vecs
+        return mu_cr, modes
     
     def reconstruct_full_modes(self, modes, nmodes = 5):
         """ Reconstruye modos completos con apoyos incluidos."""

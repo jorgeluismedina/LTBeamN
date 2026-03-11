@@ -191,7 +191,7 @@ class LTBeam(Beam):
 
         # Bloques de acoplamiento (v-t y t-v) 
         # Termino: My * v' * t' - Vz * v' * t
-        block_vt = My_base - Vz * Vz_base 
+        block_vt = My_base - Vz_base 
         KgMV[self.idx_vt] += block_vt
         KgMV[self.idx_tv] += block_vt.T 
 
@@ -204,7 +204,7 @@ class LTBeam(Beam):
         # q1j = intensidad en el nodo j en direccion de la barra
         # q2i = intensidad en el nodo i en direccion perpendicular de la barra
         # q2j = intensidad en el nodo j en direccion perpendicular de la barra
-        self.vrx_load_intensities = [q1i, q2i, q1j, q2j]
+        self.load_intensities = [q1i, q2i, q1j, q2j]
         L = self.length
 
         self.loads[0] =  (q1i/3 + q1j/6) * L
@@ -228,7 +228,7 @@ class LTBeam(Beam):
         self.Kg_ltr = KgN + KgMV
 
 
-    def get_fields(self, esc1=1e-5, esc2=1e-5, esc3=100):
+    def get_fields(self):
         EA = self.mater.E * self.section.A
         EI = self.mater.E * self.section.Iy
         L  = self.length
@@ -244,10 +244,10 @@ class LTBeam(Beam):
         sl2 = (q2j - q2i) / L
 
         # self.forces son fuerzas del nodo
-        # ahora Ni debe cambiar de signo para pasar a la fuerza de elemento
+        # deben cambiar de signo para pasar a la fuerza de elemento
         Ni = -self.forces[0] 
-        Vi =  self.forces[1]
-        Mi = -self.forces[2] # por convencion
+        Vi =  self.forces[1] # para que salga como en Ftool no cambia
+        Mi = -self.forces[2]
 
         ui  = self.disps[0]
         vi  = self.disps[1]

@@ -2,57 +2,6 @@
 import numpy as np
 
 
-class FrameSection2D:
-    def __init__(self, A, Iy):
-        self.A  = A  # cross sectional area
-        self.Iy = Iy # second moment of area respect to 3
-
-
-
-# de momenento solo secciones bisimetricas
-class FrameSection3D:
-    def __init__(self, A, Iy, Iz, J, orientation):
-        self.A  = A  # cross sectional area
-        self.Iy = Iy # second moment of area respect to y
-        self.Iz = Iz # second moment of area respect to z
-        self.J  = J  # torsional constant
-        self.orientation = orientation
-        
-        #self.warping_const
-
-
-
-class RectangularSection: # Porticos en 3D
-    def __init__(self, base, height, orientation):
-        self.b = base
-        self.h = height
-        self.orientation = orientation #0 a 90 Este angulo que sea variable
-        self.set_section_props()
-
-    def set_section_props(self):
-        self.A  = self.b * self.h
-        self.Iy = self.b * self.h**3 / 12
-        self.Iz = self.h * self.b**3 / 12
-        self.get_torsional_const()
-        #beta = 1/3 - 0.21 * b/h * (1 - 1/12 * (b/h)**4)
-
-    def get_torsional_const(self):
-        # calculo de J (constante torsional)
-        if self.b == self.h:
-            beta = 0.141
-            self.J = beta * (self.b**3) * self.h
-        else:
-            b_min = min(self.b, self.h)
-            h_max = max(self.b, self.h)
-            ratio = b_min / h_max
-            # Fórmula de aproximación polinómica
-            beta = (1/3) * (1 - 0.63*ratio + 0.052*ratio**5) 
-            self.J = beta * (b_min**3) * h_max
-
-
-
-
-
 # Seccion I bi-simetrica
 class ISection_BS:
     def __init__(self, h, bf, tw, tf, r):
@@ -123,12 +72,12 @@ class ISection_BS:
 
         # --- Geometry ---
         print("\n[ Geometry ]")
-        print(f"  h   = {self.h:.4f}")
-        print(f"  bf  = {self.bf:.4f}")
-        print(f"  tf  = {self.tf:.4f}")
-        print(f"  tw  = {self.tw:.4f}")
-        print(f"  hw  = {self.hw:.4f}")
-        print(f"  r   = {self.r:.4f}")
+        print(f"  h  = {self.h:.4f}")
+        print(f"  bf = {self.bf:.4f}")
+        print(f"  tf = {self.tf:.4f}")
+        print(f"  tw = {self.tw:.4f}")
+        print(f"  hw = {self.hw:.4f}")
+        print(f"  r  = {self.r:.4f}")
 
         # --- Properties ---
         print("\n[ Properties ]")
@@ -310,134 +259,3 @@ class ISection_MS:
         print(f"  zS = {self.zS:.6f}  (relative to centroid)")
         print(f"  i0 = {self.i0:.6f}  (respect to shear center)")
         print("\n" + "="*55 + "\n")
-
-
-
-
-
-
-        
-
-
-
-
-        
-
-
-
-
-
-'''
-class ISection_MS:
-    def __init__(self, h, bf1, bf2, tw, tf1,tf2):
-        self.h   = h     # total height
-        self.bf1 = bf1   # top flange width
-        self.bf2 = bf2   # bottom flange width
-        self.tw  = tw    # web thick
-        self.tf1 = tf1   # top flange thick
-        self.tf2 = tf2   # botttom flange thick
-        self.compute_basic()
-        self.compute_inertias_centroidal()
-        self.compute_shear_center()
-        self.compute_torsional_const()
-        self.compute_warping_const()
-        self.compute_polar_radius()
-        
-    def compute_basic(self):
-        # Areas parciales
-        A_top = self.btf * self.tf
-        A_web = self.tw * (self.h - 2.0*self.tf)
-        A_bot = self.bbf * self.tf
-
-        # Centroides parciales (medidos desde la base)
-        z_top = self.h - self.tf/2.0
-        z_web = self.tf + (self.h - 2.0*self.tf)/2.0
-        z_bot = self.tf/2.0
-
-        self.Ai = np.array([A_top, A_web, A_bot])
-        self.zi = np.array([z_top, z_web, z_bot])
-        self.A = A_top + A_web + A_bot
-
-        # Centroide medido desde la base
-        self.zG = np.dot(self.Ai, self.zi) / self.A
-    
-    
-    def compute_inertias_centroidal(self): # respecto al centroide
-        A_top, A_web, A_bot = self.Ai
-        z_top, z_web, z_bot = self.zi
-        zG = self.zG
-
-        # Calculo de Iy, inercias locales
-        h_web = self.h - 2.0*self.tf
-        Iy_top_local = self.btf * (self.tf**3) / 12
-        Iy_web_local = self.tw * (h_web**3) / 12.0
-        Iy_bot_local = self.bbf * (self.tf**3) / 12.0
-
-        # teorema de ejes paralelos
-        Iy_top = Iy_top_local + A_top * (z_top - zG)**2
-        Iy_web = Iy_web_local + A_web * (z_web - zG)**2
-        Iy_bot = Iy_bot_local + A_bot * (z_bot - zG)**2
-        self.Iy = Iy_top + Iy_web + Iy_bot
-
-        # Calculo de Iz, inercias de cada area. ya son globales por que xc = 0
-        Iz_top = self.tf * (self.btf**3) / 12
-        Iz_web = h_web * (self.tw**3) / 12
-        Iz_bot = self.tf * (self.bbf**3) / 12
-        self.Iz = Iz_top + Iz_web + Iz_bot
-
-    def compute_torsional_const(self): # como si fuera thin-walled
-        # longitudes parciales de linea neutra
-        m_top = self.btf
-        m_web = self.h - self.tf
-        m_bot = self.bbf
-
-        self.It = 1/3 * (m_top * self.tf**3+
-                         m_web * self.tw**3+
-                         m_bot * self.tf**3)
-    
-
-
-    def compute_shear_center(self):
-        # inercias locales de las mesas
-        Iz_top = self.tf * (self.btf**3) / 12
-        Iz_bot = self.tf * (self.bbf**3) / 12
-        # measure of monossimetry
-        rho = Iz_top / self.Iz
-        # distance between flange shear centers
-        h_s = self.zi[0] - self.zi[2]
-        # Centro de corte medido desde la base
-        self.zC = self.zi[0] - (1 - rho) * h_s
-
-    def compute_warping_const(self):
-        # inercias locales de las mesas
-        Iz_top = self.tf * (self.btf**3) / 12
-        Iz_bot = self.tf * (self.bbf**3) / 12
-        # distancias de los centroides locales al centro de corte
-        a = self.zi[0] - self.zC
-        b = self.zi[2] - self.zC # sale negativo
-        # Constante de warping
-        self.Iw = a**2 * Iz_top + b**2 * Iz_bot
-
-
-
-    def compute_polar_radius(self):
-        # radio de giro polar al cuadrado respecto del centro de corte
-        self.ryz2 = (self.Iy + self.Iz) / self.A + self.zC**2
-
-
-
-    
-
-        
-    def get_I_psi(self):
-        return
-    
-    def get_I_omega_psi(self):
-        return
-    
-    def get_I_y_psi(self):
-        return
-
-'''
-
-
