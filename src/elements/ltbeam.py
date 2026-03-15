@@ -220,6 +220,8 @@ class LTBeam(Beam):
         # A Coordenadas locales=globales
         self.disps = glob_disps # ya son locales
         self.forces = self.K0_vrx @ glob_disps - self.loads
+        self.disps[np.abs(self.disps) < 1e-12] = 0
+        self.forces[np.abs(self.forces) < 1e-9] = 0
 
     def update_lator_Kg(self):
         """ Actualiza la matriz geometrica con fuerzas internas """
@@ -233,7 +235,7 @@ class LTBeam(Beam):
         EI = self.mater.E * self.section.Iy
         L  = self.length
 
-        x = np.linspace(0,L,50)
+        x = np.linspace(0,L,2)
         x2 = x**2
         x3 = x2*x
         x4 = x3*x
@@ -250,7 +252,7 @@ class LTBeam(Beam):
         Mi = -self.forces[2]
 
         ui  = self.disps[0]
-        vi  = self.disps[1]
+        wi  = self.disps[1]
         thi = self.disps[2]
 
         N = -sl1/2*x2 - q1i*x + Ni
@@ -258,6 +260,14 @@ class LTBeam(Beam):
 
         V =  sl2/2*x2 + q2i*x + Vi
         M =  (sl2/6*x3 + q2i/2*x2 + Vi*x + Mi)
-        v =  (sl2/120*x5 + q2i/24*x4 + Vi*x3/6 + Mi*x2/2) / EI + thi*x + vi
+        w =  (sl2/120*x5 + q2i/24*x4 + Vi*x3/6 + Mi*x2/2) / EI + thi*x + wi
 
-        return x, N, V, M, u, v
+        # Limpieza de valores muy pequeños
+        N[np.abs(N) < 1e-9] = 0
+        V[np.abs(V) < 1e-9] = 0
+        M[np.abs(M) < 1e-9] = 0
+
+        u[np.abs(u) < 1e-12] = 0
+        w[np.abs(w) < 1e-12] = 0
+
+        return x, N, V, M, u, w

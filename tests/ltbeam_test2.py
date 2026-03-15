@@ -22,19 +22,15 @@ materials = [material1]
 # Secciones
 sect1 = ISection_BS(h=0.3, bf=0.15, tw=0.015, tf=0.015, r=0.01) #[m]
 
-sect2 = ISection_MS(h=0.3, bf1=0.2, bf2=0.12, 
-                    tw=0.015, tf1=0.015, tf2=0.015, 
-                    r1=0.01, r2=0.01) #[m]
-
 sections = [sect1]
 sect1.summary()
-
+#sect2.summary()
 
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 5 #[m]
-nelems = 25 #Con 25 elementos ya se alcanza el valor teorico de momento critico
+nelems = 26 #Con 25 elementos ya se alcanza el valor teorico de momento critico
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -59,13 +55,13 @@ lator_restraints = np.array([
 ])
 
 
-# ----- CARGAS NODALES --------
-# Carga de flexion pura unitaria
-nodal_loads = np.array([
-    [0,       0, 0, -1],
-    [nelems,  0, 0, 1]
-])
 
+# ----- CARGAS DE ELEMENTO --------
+# Carga distribuida uniforme unitaria
+elem_loads = []
+for e in range(nelems):
+    elem_loads.append([e,   0, -1, 0, -1]) # id_elem, q1i, q2i, q1j, q2j
+elem_loads = np.array(elem_loads)
 
 
 
@@ -78,7 +74,7 @@ model.add_nodes(coordinates)
 model.add_elements(elements_data)
 model.add_verax_restraints(verax_restraints)
 model.add_lator_restraints(lator_restraints)
-model.add_nodal_loads(nodal_loads)
+model.add_elem_loads(elem_loads)
 
 
 # ----- RESOLUCION DEL MODELO --------
@@ -86,7 +82,7 @@ model.add_nodal_loads(nodal_loads)
 solver1 = StaticSolver(model)
 verax_disps, verax_react = solver1.solve()
 #print(model.elems[0].K0_ltr)
-#print(verax_disps.reshape(model.nnods, model.nvrx_dofn))
+#print(verax_disps.reshape(mod.nnods, mod.nvrx_dofn))
 
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)
@@ -100,13 +96,9 @@ EIw = material1.E * sect1.Iw
 M_critico_ana = np.pi / L * np.sqrt(EIz*GIt * (1 + (np.pi**2*EIw)/(L**2*GIt)))
 M_critico_num = mu_crs[0]
 print(f"Momento Crítico Calculado: {M_critico_num/1000:.4f} kNm")
-print(f"Momento Crítico Teorico: {M_critico_ana/1000:.4f} kNm")
+
  
-
-print(model.elems[0].loads)
-print(model.elems[0].disps)
-print(model.elems[0].forces)
-
+print(model.elems[-1].forces)
 
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico

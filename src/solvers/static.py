@@ -110,7 +110,49 @@ class StaticSolver():
         
         return all_fields
     
+    
+    def prepare_diagrams(self, all_fields, esc1=0.6, esc2=0.8, esc3=0.6):
+        all_x, all_N, all_V, all_M, all_u, all_w = all_fields
 
+        max_N = np.max(np.abs(np.asarray(all_N))) or 1
+        max_V = np.max(np.abs(np.asarray(all_V))) or 1
+        max_M = np.max(np.abs(np.asarray(all_M))) or 1
+        max_u = np.max(np.abs(np.asarray(all_u)))
+        max_w = np.max(np.abs(np.asarray(all_w)))
+        max_def = max(max_u, max_w) or 1
+
+        N_globals = []
+        V_globals = []
+        M_globals = []
+        def_shapes = []
+
+        for e, elem in enumerate(self.model.elems):
+            x = all_x[e]
+            X0 = elem.coord[0]
+            
+            # Coordenadas globales
+            X = X0 + x
+            
+            # Diagramas (perpendiculares a X, en Y)
+            N_diag_Y = all_N[e] / max_N * esc1
+            V_diag_Y = all_V[e] / max_V * esc1
+            M_diag_Y = all_M[e] / max_M * esc2
+            
+            # Deformada
+            X_def = X + all_u[e] / max_def * esc3
+            Y_def = all_w[e] / max_def * esc3
+            
+            # Almacena
+            N_globals.append(np.vstack([X, N_diag_Y, all_N[e]]))
+            V_globals.append(np.vstack([X, V_diag_Y, all_V[e]]))
+            M_globals.append(np.vstack([X, M_diag_Y, all_M[e]]))
+            def_shapes.append(np.vstack([X_def, Y_def]))
+
+        return N_globals, V_globals, M_globals, def_shapes
+    
+
+    
+    """
     def prepare_diagrams(self, fields, esc1=0.5, esc2=0.7, esc3=0.5):
         all_x, all_N, all_V, all_M, all_u, all_w = fields
         max_N = np.max(np.abs(np.asarray(all_N)))
@@ -162,6 +204,8 @@ class StaticSolver():
             def_shapes.append(np.vstack([X_def, Y_def]))
 
         return N_globals, V_globals, M_globals, def_shapes
+
+    """
 
 
 

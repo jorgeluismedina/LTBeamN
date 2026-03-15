@@ -59,7 +59,6 @@ class ISection_BS:
             self.It += 2*I2tr
         
     def compute_warping_inertia(self):
-        Izf = self.bf * self.tf**3 / 12
         self.Iw = 0.25 * self.Iz * (self.h - self.tf)**2
 
     def compute_polar_radius(self): #respecto al centro de corte

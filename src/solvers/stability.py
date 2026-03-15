@@ -51,28 +51,30 @@ class StabilitySolver():
         Kg_ff = self.Kg[np.ix_(free, free)]
         
         # Resuelve autovectores y autovalores 
-        # invirtiendo el problema (-Kg * phi = lambda * K0 * phi)
+        # invirtiendo el problema (-Kg * phi = lam_cr * K0 * phi)
         # lam_cr = 1 / mu_cr, donde mu_cr es la carga crítica de pandeo
-        lam_cr, modes = sp.linalg.eigh(-Kg_ff, K0_ff)
-        #vals, vecs = sp.linalg.eig(K0_ff, -Kg_ff)
+        # los autovectores modes son columnas, ca columna es un modo de pandeo
+        lam_crs, modes = sp.linalg.eigh(-Kg_ff, K0_ff)
 
         # solo autovalores reales positivos
-        pos_indices = np.where(lam_cr > 1e-12)[0]
-        lam_cr = lam_cr[pos_indices]
+        pos_indices = np.where(lam_crs > 1e-12)[0]
+        lam_crs = lam_crs[pos_indices]
         modes  = modes[:, pos_indices]
 
         # Calculo de mu_critico 
-        mu_cr = 1 / lam_cr
+        mu_crs = 1 / lam_crs
 
         # Ordenamiento de autovalores de manera creciente
-        idx = mu_cr.argsort()
-        mu_cr = mu_cr[idx]
+        idx = mu_crs.argsort()
+        mu_crs = mu_crs[idx]
         modes = modes[:, idx]
 
-        # Los autovectores son columnas, cada columna es un modo de pandeo
-        return mu_cr, modes
+        # Reconstruccion de modos completos con apoyos incluidos
+        full_modes = np.zeros((self.model.nltr_dofs, mu_crs.size))
+        full_modes[free, :] = modes
+        return mu_crs, full_modes
     
-    def reconstruct_full_modes(self, modes, nmodes = 5):
+    def reconstruct_full_modes(self, mu_crs, modes, nmodes = 5):
         """ Reconstruye modos completos con apoyos incluidos."""
         full_modes = np.zeros((self.model.nltr_dofs, nmodes))
         free, supp = self.process_lator_restraints()
@@ -80,4 +82,4 @@ class StabilitySolver():
             full_modes[free, i] = modes[:, i]
             full_modes[supp, i] = 0.0 # Apoyos sin desplazamiento
         
-        return full_modes
+        return mu_crs[:nmodes], full_modes

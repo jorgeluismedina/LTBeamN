@@ -10,31 +10,31 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
-from src.sections import ISection_BS, ISection_MS
+from src.sections import ISection_MS
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
 
 # Materiales
-material1 = Material(E=2.1e11, nu=0.2, dens=1.0) #[N/m2]
+material1 = Material(E=2.1e11, nu=0.3, dens=0.0) #[N/m2]
 materials = [material1]
 
 # Secciones
-sect1 = ISection_BS(h=0.3, bf=0.15, tw=0.015, tf=0.015, r=0.01) #[m]
-
-sect2 = ISection_MS(h=0.3, bf1=0.2, bf2=0.12, 
-                    tw=0.015, tf1=0.015, tf2=0.015, 
-                    r1=0.01, r2=0.01) #[m]
+sect1 = ISection_MS(h=0.3, bf1=0.15, bf2=0.20, 
+                    tw=0.01, tf1=0.012, tf2=0.015, r1=0.0, r2=0.0) #[m]
 
 sections = [sect1]
 sect1.summary()
 
 
 
-
 # ----- CONSTRUCCION DE LA MALLA --------
-L = 5 #[m]
-nelems = 25 #Con 25 elementos ya se alcanza el valor teorico de momento critico
+L = 19.5 #[m]
+# numero de elementos pares para que exista un nodo en el centro
+nelems = 150 
+# Con 150 elementos mu_cr = 8.0760, error con Ansys delta = 0.14%
+# Con 250 elementos mu_cr = 8.0911, error con Ansys delta = 0.32%
+# Con 350 elementos mu_cr = 8.0978, error con Ansys delta = 0.41%
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -48,24 +48,26 @@ elements_data = np.array(elements_data)
 
 
 # ----- RESTRICCIONES --------
+# Restricciones problema estatico
 verax_restraints = np.array([
-    [0,       1, 1, 0],
-    [nelems,  1, 1, 0]
+    [0,         1, 1, 0],
+    [nelems/2,  1, 1, 0],
+    [nelems,    1, 1, 0]
 ])
 
+# restricciones problema de estabilidad
 lator_restraints = np.array([
-    [0,       1, 0, 1, 0],
-    [nelems,  1, 0, 1, 0]
+    [0,         1, 0, 1, 0],
+    [nelems/2,  1, 0, 1, 0],
+    [nelems,    1, 0, 1, 0]
 ])
+
 
 
 # ----- CARGAS NODALES --------
-# Carga de flexion pura unitaria
 nodal_loads = np.array([
-    [0,       0, 0, -1],
-    [nelems,  0, 0, 1]
+    [nelems/4,    0, -10000, 0]
 ])
-
 
 
 
@@ -85,33 +87,21 @@ model.add_nodal_loads(nodal_loads)
 # Resolucion del problema estatico
 solver1 = StaticSolver(model)
 verax_disps, verax_react = solver1.solve()
-#print(model.elems[0].K0_ltr)
+#print(verax_react)
 #print(verax_disps.reshape(model.nnods, model.nvrx_dofn))
 
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)
 mu_crs, modes = solver2.solve()
+print(f"factor de carga critico μ_cr: {mu_crs[0]:.4f}")
 
-
-# verificacion para flexion pura
-EIz = material1.E * sect1.Iz
-GIt = material1.G * sect1.It
-EIw = material1.E * sect1.Iw
-M_critico_ana = np.pi / L * np.sqrt(EIz*GIt * (1 + (np.pi**2*EIw)/(L**2*GIt)))
-M_critico_num = mu_crs[0]
-print(f"Momento Crítico Calculado: {M_critico_num/1000:.4f} kNm")
-print(f"Momento Crítico Teorico: {M_critico_ana/1000:.4f} kNm")
  
-
-print(model.elems[0].loads)
-print(model.elems[0].disps)
-print(model.elems[0].forces)
-
 
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
 all_fields = solver1.generate_fields()
 all_diagrams = solver1.prepare_diagrams(all_fields)
+
 
 plot_diagram(model, all_diagrams[0], "Axial Force Diagram")
 plot_diagram(model, all_diagrams[1], "Shear Force Diagram")
@@ -121,4 +111,3 @@ plot_deformed(model, all_diagrams[3])
 # Problema de estabilidad
 plot_buckling_modes(model, mu_crs, modes) 
 plt.show()
-
