@@ -118,6 +118,10 @@ class ISection_MS:
         self.compute_polar_radius()
         self.compute_wagner_coeff()
 
+        self.I_psi  = 0.0
+        self.I_wpsi = 0.0
+        self.I_ypsi = 0.0
+
     def compute_basic(self):
         # propiedades ala superior
         self.Af1  = self.bf1 * self.tf1
@@ -228,6 +232,11 @@ class ISection_MS:
 
         self.beta_z = 1 / (2*self.Iy) * (sf1 + sf2 + sw + sr1 + sr2) - self.zS
 
+    def update_tapered_inertias(self, I_psi, I_wpsi, I_ypsi):
+        self.I_psi  = I_psi
+        self.I_wpsi = I_wpsi
+        self.I_ypsi = I_ypsi
+
     def summary(self):
         print("\n" + "="*55)
         print(" I-SECTION (MONOSYMMETRIC) – GEOMETRY & PROPERTIES")
@@ -257,4 +266,11 @@ class ISection_MS:
         print(f"  zG = {self.zG:.6f}  (from bottom fiber)")
         print(f"  zS = {self.zS:.6f}  (relative to centroid)")
         print(f"  i0 = {self.i0:.6f}  (respect to shear center)")
+        
+        # --- Tapered effect Properties ---
+        print("\n[ Tapered Effects Properties ]")
+        print(f"  I_psi  = {self.I_psi:.4e}")
+        print(f"  I_wpsi = {self.I_wpsi:.4e}")
+        print(f"  I_ypsi = {self.I_ypsi:.4e}")
+
         print("\n" + "="*55 + "\n")

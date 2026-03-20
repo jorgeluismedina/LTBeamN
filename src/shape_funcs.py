@@ -1,46 +1,59 @@
 
+"""
+Funciones de forma de Hermite cúbicas para elementos de viga.
+Dominio: ξ ∈ [0, 1]
+"""
 import numpy as np
 
-# r = xi
-# s = eta
-# t = zeta
-
-# FUNCIONES DE FORMA EN SENTIDO ANTIHORARIO
-# COLOCAR CONECTIVIDADES EN SENTIDO ANTIHORARIO
-#def shape_bar(r):
-
-
-
-def shape_beam(r):
-    r2 = r*r
-    r3 = r2*r
-
-    N1 = 1 - 3*r2 + 2*r3
-    N2 = r - 2*r2 + r3
-    N3 = 3*r2 - 2*r3
-    N4 = -r2 + r3
-
+def N_hermite(xi):
+    """
+    Funciones de forma de Hermite cúbicas.
+    
+    Retorna: [N1, N2, N3, N4]
+    - N1, N3: funciones de traslación
+    - N2, N4: funciones de rotación
+    """
+    xi2 = xi * xi
+    xi3 = xi2 * xi
+    
+    N1 = 1 - 3*xi2 + 2*xi3
+    N2 = xi - 2*xi2 + xi3
+    N3 = 3*xi2 - 2*xi3
+    N4 = -xi2 + xi3
+    
     return np.array([N1, N2, N3, N4])
 
 
-def deriv1beam(r):
-    r2 = r*r
-
-    d1N1 = -6*r + 6*r2
-    d1N2 = 1 - 4*r + 3*r2
-    d1N3 = 6*r - 6*r2
-    d1N4 = -2*r + 3*r2
+def dN_hermite(xi):
+    """
+    Primera derivada de funciones de Hermite respecto a ξ.
     
-    return np.array([d1N1, d1N2, d1N3, d1N4])
+    Retorna: dN/dξ
+    """
+    xi2 = xi * xi
+    
+    dN1 = -6*xi + 6*xi2
+    dN2 = 1 - 4*xi + 3*xi2
+    dN3 = 6*xi - 6*xi2
+    dN4 = -2*xi + 3*xi2
+    
+    return np.array([dN1, dN2, dN3, dN4])
 
 
-def deriv2beam(r):
-    d2N1 = -6 + 12*r
-    d2N2 = -4 + 6*r
-    d2N3 = 6 - 12*r
-    d2N4 = -2 + 6*r
+def ddN_hermite(xi):
+    """
+    Segunda derivada de funciones de Hermite respecto a ξ.
+    
+    Retorna: d²N/dξ²
+    """
+    ddN1 = -6 + 12*xi
+    ddN2 = -4 + 6*xi
+    ddN3 = 6 - 12*xi
+    ddN4 = -2 + 6*xi
+    
+    return np.array([ddN1, ddN2, ddN3, ddN4])
 
-    return np.array([d2N1, d2N2, d2N3, d2N4])
+
 
     
       

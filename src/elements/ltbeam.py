@@ -5,8 +5,9 @@ from .base_beam import Beam
 
 class LTBeam(Beam):
     def __init__(self, mater, section, coord, conec, verax_dof, lator_dof):
-        super().__init__(mater, section, coord, conec, verax_dof, lator_dof)
+        super().__init__(mater,coord, conec, verax_dof, lator_dof)
 
+        self.section = section
         self.init_geometry()
         self.set_dof_indices()
 
@@ -144,23 +145,25 @@ class LTBeam(Beam):
     
     def compute_lator_KgN(self): 
         """ Matriz geometrica por carga axial (8x8) """
-        N = self.forces[0]
         zs = self.section.zS
-        r02 = self.section.i0**2    
+        i02 = self.section.i0**2
 
+        N1 =  self.forces[0]
+        N2 = -self.forces[3]
+            
         # Matriz base
-        base = self.dNidNj_matrix()
+        N_base = (N1 * self.dNidNj_1_xi_matrix() + 
+                  N2 * self.dNidNj_xi_matrix())
 
         # Ensamblaje de matriz geometrica por carga axial
         KgN = np.zeros((8, 8))
         
         # Bloques directos
-        block_vv = N * base
-        KgN[self.idx_vv] = block_vv        # Bloque v-v (Flexión lateral)
-        KgN[self.idx_tt] = r02 * block_vv  # Bloque t-t (Torsión)
+        KgN[self.idx_vv] = N_base        # Bloque v-v (Flexión lateral)
+        KgN[self.idx_tt] = i02 * N_base  # Bloque t-t (Torsión)
 
         # Bloques de acoplamiento (zc)
-        block_vt = N * zs * base
+        block_vt = zs * N_base
         KgN[self.idx_vt] += block_vt # Bloque vt (Acoplamiento)
         KgN[self.idx_tv] += block_vt # Bloque tv = vt (Acoplamiento)
 
@@ -176,8 +179,8 @@ class LTBeam(Beam):
         M2 =  self.forces[5] # Momento en nodo j
         Vz = (M1 - M2) / L
   
-        My_base = (M1 * self.dNidNj_1_xi_matrix() 
-                   + M2 * self.dNidNj_xi_matrix()) # Integral de My * Ni' * Nj'
+        My_base = (M1 * self.dNidNj_1_xi_matrix() + 
+                   M2 * self.dNidNj_xi_matrix()) # Integral de My * Ni' * Nj'
         
         Vz_base  = Vz * self.dNiNj_matrix() # Integral de Vz * Ni' * Nj (asimetrica)
 
@@ -198,22 +201,22 @@ class LTBeam(Beam):
         return KgMV
     
 
-    def add_loads(self, q1i, q2i, q1j, q2j):
+    def add_loads(self, qxi, qzi, qxj, qzj):
         # Añadir en coordenadas locales
-        # q1i = intensidad en el nodo i en direccion de la barra
-        # q1j = intensidad en el nodo j en direccion de la barra
-        # q2i = intensidad en el nodo i en direccion perpendicular de la barra
-        # q2j = intensidad en el nodo j en direccion perpendicular de la barra
-        self.load_intensities = [q1i, q2i, q1j, q2j]
+        # qxi = intensidad en el nodo i en direccion de la barra
+        # qxj = intensidad en el nodo j en direccion de la barra
+        # qzi = intensidad en el nodo i en direccion perpendicular de la barra
+        # qzj = intensidad en el nodo j en direccion perpendicular de la barra
+        self.load_intensities = [qxi, qzi, qxj, qzj]
         L = self.length
 
-        self.loads[0] =  (q1i/3 + q1j/6) * L
-        self.loads[1] =  (7*q2i + 3*q2j) * L / 20
-        self.loads[2] =  (3*q2i + 2*q2j) * L**2 / 60
+        self.loads[0] =  (qxi/3 + qxj/6) * L
+        self.loads[1] =  (7*qzi + 3*qzj) * L / 20
+        self.loads[2] =  (3*qzi + 2*qzj) * L**2 / 60
 
-        self.loads[3] =  (q1j/3 + q1i/6) * L
-        self.loads[4] =  (3*q2i + 7*q2j) * L / 20
-        self.loads[5] = -(2*q2i + 3*q2j) * L**2 / 60
+        self.loads[3] =  (qxj/3 + qxi/6) * L
+        self.loads[4] =  (3*qzi + 7*qzj) * L / 20
+        self.loads[5] = -(2*qzi + 3*qzj) * L**2 / 60
 
 
     def calculate_forces(self, glob_disps):

@@ -47,7 +47,7 @@ class StabilityModel():
         self.nltr_dofs = self.nltr_dofn * self.nnods # numero total de DOF problema estabilidad
         self.altr_dof = np.arange(self.nltr_dofs).reshape((self.nnods, self.nltr_dofn)) # DOF ordenados por nodo
 
-    def add_elements(self, elements_data):
+    def add_uniform_elements(self, elements_data):
         """ Funcion solo para añadir elementos barra"""
         for elem_data in elements_data:
             etype, mat_id, sec_id, nodei, nodej = elem_data
@@ -60,7 +60,30 @@ class StabilityModel():
             vrx_dof = self.avrx_dof[conec].flatten()
             ltr_dof = self.altr_dof[conec].flatten()
 
-            elem = ElementFactory.create(etype, mat, sec, coord, conec, vrx_dof, ltr_dof)
+            elem = ElementFactory.create_uniform(etype, mat, sec, 
+                                                 coord, conec, 
+                                                 vrx_dof, ltr_dof)
+            self.elems.append(elem)
+            
+
+    def add_tapered_elements(self, elements_data):
+        """ Funcion solo para añadir elementos barra"""
+        for elem_data in elements_data:
+            etype, mat_id, sec1_id, sec2_id, nodei, nodej = elem_data
+
+            mat = self.materials[int(mat_id)]
+            seci = self.sections[int(sec1_id)]
+            secj = self.sections[int(sec2_id)]
+            conec = [int(nodei), int(nodej)]
+            
+            coord = self.coord[conec]
+            vrx_dof = self.avrx_dof[conec].flatten()
+            ltr_dof = self.altr_dof[conec].flatten()
+
+            elem = ElementFactory.create_tapered(etype, mat, 
+                                                 seci, secj,
+                                                 coord, conec, 
+                                                 vrx_dof, ltr_dof)
             self.elems.append(elem)
 
 
