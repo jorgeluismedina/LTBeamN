@@ -10,7 +10,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
-from src.sections import ISection_BS, ISection_MS
+from src.sections.section_bs import ISection_BS
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
@@ -21,11 +21,6 @@ materials = [material1]
 
 # Secciones
 sect1 = ISection_BS(h=0.3, bf=0.15, tw=0.015, tf=0.015, r=0.01) #[m]
-
-sect2 = ISection_MS(h=0.3, bf1=0.2, bf2=0.12, 
-                    tw=0.015, tf1=0.015, tf2=0.015, 
-                    r1=0.01, r2=0.01) #[m]
-
 sections = [sect1]
 sect1.summary()
 

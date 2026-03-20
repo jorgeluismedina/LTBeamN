@@ -1,8 +1,8 @@
 
 
 import numpy as np
-import scipy as sp
-from src.sections import ISection_BS, ISection_MS
+from src.sections.section_bs import ISection_BS
+from src.sections.section_ms import ISection_MS
 
 
 def interpolate_section(section1, section2, xi):

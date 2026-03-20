@@ -17,14 +17,13 @@ from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
 
 # Materiales
-material1 = Material(E=2.1e11, nu=0.2, dens=1.0) #[N/m2]
+material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2]
 materials = [material1]
 
 # Secciones
 sect1 = ISection_MS(h=0.3, bf1=0.2, bf2=0.12, tw=0.01, tf1=0.01, tf2=0.01, r1=0.01, r2=0.01) #[m]
-
 sections = [sect1]
-sect1.summary()
+
 
 
 
