@@ -61,7 +61,7 @@ lator_restraints = np.array([
 # Carga distribuida uniforme unitaria
 elem_loads = []
 for e in range(nelems):
-    elem_loads.append([e,   0, -1, 0, -1]) # id_elem, q1i, q2i, q1j, q2j
+    elem_loads.append([e,   0, -1000, 0, -1000]) # id_elem, q1i, q2i, q1j, q2j
 elem_loads = np.array(elem_loads)
 
 
@@ -87,8 +87,13 @@ verax_disps, verax_react = solver1.solve()
 solver2 = StabilitySolver(model)
 mu_crs, modes = solver2.solve()
 
-print(f"Momento Crítico Calculado: {mu_crs[0]/1000:.4f} kNm")
-print(mu_crs[0]/1000, mu_crs[1]/1000, mu_crs[2]/1000, mu_crs[3]/1000)
+# Resultados y comparacion
+mu_cr_ltbeamn = 60.89
+mu_cr = mu_crs[0]
+
+print(f"Factor de carga critico μ_cr (PyLTB):   {mu_cr:.4f}")
+print(f"Factor de carga critico μ_cr (LTBeamN): {mu_cr_ltbeamn:.4f}")
+print(f"Diff de resultados con LTBeamN: {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn * 100:.2f} %")
  
 
 # ----- PLOTEO DE RESULTADOS --------

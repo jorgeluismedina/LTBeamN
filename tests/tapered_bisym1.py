@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
 from src.sections.section_ms import ISection_MS
-from src.sections.section_utils import interpolate_multiple_sections
+from src.sections.utils import interpolate_multiple_sections
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
@@ -32,7 +32,7 @@ section2 = ISection_MS(h=0.2, bf1=0.15, bf2=0.15,
 
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 5 #[m]
-nelems = 150 
+nelems = 200 
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -68,8 +68,8 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga de flexion pura unitaria
 nodal_loads = np.array([
-    [0,       0, 0, -1],
-    [nelems,  0, 0, 1]
+    [0,       0, 0, -1000],
+    [nelems,  0, 0,  1000]
 ])
 
 
@@ -84,8 +84,8 @@ model.add_lator_restraints(lator_restraints)
 model.add_nodal_loads(nodal_loads)
 
 
-print(model.elems[0].dh1, model.elems[0].dh2)
-print(model.elems[1].dh1, model.elems[1].dh2)
+#print(model.elems[0].dh1, model.elems[0].dh2)
+#print(model.elems[1].dh1, model.elems[1].dh2)
 
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
@@ -96,12 +96,16 @@ verax_disps, verax_react = solver1.solve()
 solver2 = StabilitySolver(model)
 mu_crs, modes = solver2.solve()
 
-M_critico_num = mu_crs[0]
-print(f"Momento Crítico Calculado: {M_critico_num/1000:.4f} kNm")
+# Resultados y comparacion
+mu_cr = mu_crs[0] 
+mu_cr_ltbeamn = 241.83
+print(f"Factor de carga critico μ_cr (PyLTB):   {mu_cr:.4f}")
+print(f"Factor de carga critico μ_cr (LTBeamN): {mu_cr_ltbeamn:.4f}")
+print(f"Diferencia de resultados: {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn*100:.2f} %")
 
 
 
-#"""
+"""
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
 all_fields = solver1.generate_fields()
@@ -115,4 +119,4 @@ plot_deformed(model, all_diagrams[3])
 # Problema de estabilidad
 plot_buckling_modes(model, mu_crs, modes) 
 plt.show()
-#"""
+"""

@@ -29,7 +29,7 @@ sections = [sect1]
 
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 5 #[m]
-nelems = 28 #Con 25 elementos ya se alcanza el valor teorico de momento critico
+nelems = 50 #Con 25 elementos ya se alcanza el valor teorico de momento critico
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -59,8 +59,8 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga de flexion pura unitaria en el centro de corte
 nodal_loads = np.array([
-    [0,       0, 0, -1],
-    [nelems,  0, 0,  1]
+    [0,       0, 0, -1000],
+    [nelems,  0, 0,  1000]
 ])
 
 
@@ -87,7 +87,7 @@ solver2 = StabilitySolver(model)
 mu_crs, modes = solver2.solve()
 
 
-# verificacion para flexion pura
+# Resultados y comparacion
 Iz = sect1.Iz
 Iw = sect1.Iw
 EIz = material1.E * Iz
@@ -96,11 +96,18 @@ EIw = material1.E * Iw
 beta_z = sect1.beta_z
 
 
-M_critico_ana = np.pi**2 * EIz / L**2 * (np.abs(beta_z/2) + np.sqrt(beta_z**2/4 + GIt/EIz * L**2/np.pi**2 + Iw/Iz))
-M_critico_num = mu_crs[0]
-print(f"Momento Crítico Calculado: {M_critico_num/1000:.4f} kNm")
-print(f"Momento Crítico Teorico: {M_critico_ana/1000:.4f} kNm")
-print(mu_crs[0]/1000, mu_crs[1]/1000, mu_crs[2]/1000, mu_crs[3]/1000)
+mu_cr_ana = np.pi**2 * EIz / L**2 * (np.abs(beta_z/2) + 
+                                     np.sqrt(beta_z**2/4 + GIt/EIz * L**2/np.pi**2 + Iw/Iz)) /1000
+
+mu_cr_ana = np.pi / L * np.sqrt(EIz*GIt * (1 + (np.pi**2*EIw)/(L**2*GIt))) / 1000 
+mu_cr_ltbeamn = 204.12
+mu_cr = mu_crs[0]
+
+print(f"Factor de carga critico μ_cr (Real):    {mu_cr_ana:.4f}")
+print(f"Factor de carga critico μ_cr (PyLTB):   {mu_cr:.4f}")
+print(f"Factor de carga critico μ_cr (LTBeamN): {mu_cr_ltbeamn:.4f}")
+print(f"Error respecto al analitico:    {abs(mu_cr - mu_cr_ana)/mu_cr_ana * 100:.2f} %")
+print(f"Diff de resultados con LTBeamN: {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn * 100:.2f} %")
  
 
 # ----- PLOTEO DE RESULTADOS --------

@@ -55,8 +55,8 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga de flexion pura unitaria
 nodal_loads = np.array([
-    [0,       0, 0, -1],
-    [nelems,  0, 0, 1]
+    [0,       0, 0, -1000],
+    [nelems,  0, 0,  1000]
 ])
 
 
@@ -86,21 +86,27 @@ solver2 = StabilitySolver(model)
 mu_crs, modes = solver2.solve()
 
 
-# verificacion para flexion pura
+# Resultados y comparacion
 EIz = material1.E * sect1.Iz
 GIt = material1.G * sect1.It
 EIw = material1.E * sect1.Iw
-M_critico_ana = np.pi / L * np.sqrt(EIz*GIt * (1 + (np.pi**2*EIw)/(L**2*GIt)))
-M_critico_num = mu_crs[0]
-print(f"Momento Crítico Calculado: {M_critico_num/1000:.4f} kNm")
-print(f"Momento Crítico Teorico: {M_critico_ana/1000:.4f} kNm")
+
+mu_cr_ana = np.pi / L * np.sqrt(EIz*GIt * (1 + (np.pi**2*EIw)/(L**2*GIt))) / 1000 
+mu_cr_ltbeamn = 228.1
+mu_cr = mu_crs[0]
+
+print(f"Factor de carga critico μ_cr (Real):    {mu_cr_ana:.4f}")
+print(f"Factor de carga critico μ_cr (PyLTB):   {mu_cr:.4f}")
+print(f"Factor de carga critico μ_cr (LTBeamN): {mu_cr_ltbeamn:.4f}")
+print(f"Error respecto al analitico:    {abs(mu_cr - mu_cr_ana)/mu_cr_ana * 100:.2f} %")
+print(f"Diff de resultados con LTBeamN: {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn * 100:.2f} %")
  
 
-print(model.elems[0].loads)
-print(model.elems[0].disps)
-print(model.elems[0].forces)
+#print(model.elems[0].loads)
+#print(model.elems[0].disps)
+#print(model.elems[0].forces)
 
-
+"""
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
 all_fields = solver1.generate_fields()
@@ -114,4 +120,5 @@ plot_deformed(model, all_diagrams[3])
 # Problema de estabilidad
 plot_buckling_modes(model, mu_crs, modes) 
 plt.show()
+"""
 

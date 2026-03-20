@@ -2,12 +2,12 @@
 import numpy as np
 import scipy as sp
 from src.elements.base_beam import Beam
-from src.sections.section_utils import interpolate_section
+from src.sections.utils import interpolate_section
 from src.shape_funcs import N_hermite, dN_hermite, ddN_hermite
 from src.gauss_quad import gauss_1d
 
 
-class LTBeamN(Beam):
+class LTBeamTap(Beam):
     def __init__(self, mater, section_i, section_j, coord, conec, verax_dof, lator_dof):
         super().__init__(mater, coord, conec, verax_dof, lator_dof)
 
@@ -16,7 +16,7 @@ class LTBeamN(Beam):
 
         self.init_geometry()
 
-        self.gpoints, self.gweights = gauss_1d(3)
+        self.gpoints, self.gweights = gauss_1d(4)
 
         # Inicializar matrices de rigidez y geometricas
         self.K0_vrx, self.K0_ltr = self.compute_K0_matrices()

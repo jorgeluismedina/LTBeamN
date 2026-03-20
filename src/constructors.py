@@ -1,5 +1,5 @@
 from .elements.ltbeam import LTBeam
-from .elements.ltbeamn import LTBeamN
+from .elements.ltbeamtap import LTBeamTap
 
 
 
@@ -47,7 +47,7 @@ class ElementFactory:
 
 # Registrar elemento disponible
 ElementFactory.register(1, LTBeam)
-ElementFactory.register(2, LTBeamN)
+ElementFactory.register(2, LTBeamTap)
 
 
 

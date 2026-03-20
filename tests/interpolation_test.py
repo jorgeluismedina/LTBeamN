@@ -5,17 +5,13 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
-import scipy as sp
 
 import matplotlib.pyplot as plt
-from src.model import StabilityModel
 from src.material import Material
-from src.sections import ISection_BS, ISection_MS
-from src.section_utils import interpolate_multiple_sections
-from src.solvers.static import StaticSolver
-from src.solvers.stability import StabilitySolver
+from src.sections.section_ms import ISection_MS
+from src.sections.utils import interpolate_multiple_sections
 from src.gauss_quad import gauss_1d
-from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
+
 
 # Materiales
 material1 = Material(E=2.1e11, nu=0.2, dens=1.0) #[N/m2]
