@@ -10,7 +10,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
-from src.sections import ISection_BS, ISection_MS
+from src.sections.section_ms import ISection_MS
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
@@ -20,7 +20,8 @@ material1 = Material(E=2.1e11, nu=0.3, dens=0.0) #[N/m2]
 materials = [material1]
 
 # Secciones
-sect1 = ISection_BS(h=0.3, bf=0.2, tw=0.010, tf=0.015, r=0.0) #[m]
+sect1 = ISection_MS(h=0.3, bf1=0.15, bf2=0.20, 
+                    tw=0.01, tf1=0.012, tf2=0.015, r1=0.0, r2=0.0) #[m]
 
 sections = [sect1]
 sect1.summary()
@@ -30,10 +31,10 @@ sect1.summary()
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 19.5 #[m]
 # numero de elementos pares para que exista un nodo en el centro
-nelems = 200
-# Con 150 elementos mu_cr = 15.0078, error con Ansys delta = 1.25%
-# Con 200 elementos mu_cr = 15.0072, error con Ansys delta = 1.05%
-# Con 300 elementos mu_cr = 15.0072, error con Ansys delta = 1.05%
+nelems = 150 
+# Con 150 elementos mu_cr = 8.0760, error con Ansys delta = 0.14%
+# Con 250 elementos mu_cr = 8.0911, error con Ansys delta = 0.32%
+# Con 350 elementos mu_cr = 8.0978, error con Ansys delta = 0.41%
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -65,8 +66,7 @@ lator_restraints = np.array([
 
 # ----- CARGAS NODALES --------
 nodal_loads = np.array([
-    [nelems/4,    0, -10000, 0],
-    [3*nelems/4,  0, -10000, 0]
+    [nelems/4,    0, -10000, 0]
 ])
 
 

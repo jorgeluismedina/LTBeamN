@@ -1,7 +1,7 @@
 
 import numpy as np
 import scipy as sp
-from .base_beam import Beam
+from src.elements.base_beam import Beam
 
 class LTBeam(Beam):
     def __init__(self, mater, section, coord, conec, verax_dof, lator_dof):

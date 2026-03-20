@@ -10,8 +10,8 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
-from src.sections import ISection_MS
-from src.section_utils import interpolate_multiple_sections
+from src.sections.section_ms import ISection_MS
+from src.sections.section_utils import interpolate_multiple_sections
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
@@ -21,11 +21,11 @@ material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2] # cambio a nu=0.3 por q
 materials = [material1]
 
 # Secciones
-section1 = ISection_MS(h=0.44, bf1=0.25, bf2=0.25, 
-                       tw=0.014, tf1=0.02, tf2=0.02, r1=0.0, r2=0.0) #[m]
+section1 = ISection_MS(h=0.3, bf1=0.20, bf2=0.20, 
+                       tw=0.01, tf1=0.015, tf2=0.015, r1=0.0, r2=0.0) #[m]
 
-section2 = ISection_MS(h=0.84, bf1=0.25, bf2=0.25, 
-                       tw=0.014, tf1=0.02, tf2=0.02, r1=0.0, r2=0.0) #[m]
+section2 = ISection_MS(h=0.2, bf1=0.15, bf2=0.15, 
+                       tw=0.01, tf1=0.015, tf2=0.015, r1=0.0, r2=0.0) #[m]
 
 
 
@@ -34,7 +34,7 @@ section2 = ISection_MS(h=0.84, bf1=0.25, bf2=0.25,
 L = 5 #[m]
 nelems = 150 
 
-# Coordenada de nodos
+# Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
 norm_coords = coordinates / L
 
@@ -68,8 +68,8 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga de flexion pura unitaria
 nodal_loads = np.array([
-    [0,       0, 0, 200],
-    [nelems,  0, 0, -800]
+    [0,       0, 0, -1],
+    [nelems,  0, 0, 1]
 ])
 
 
@@ -92,7 +92,7 @@ print(model.elems[1].dh1, model.elems[1].dh2)
 solver1 = StaticSolver(model)
 verax_disps, verax_react = solver1.solve()
 
-# Resolcion del problema de estabilidad
+# Resolucion del problema de estabilidad
 solver2 = StabilitySolver(model)
 mu_crs, modes = solver2.solve()
 

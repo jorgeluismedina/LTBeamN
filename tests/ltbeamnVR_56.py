@@ -10,7 +10,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
-from src.sections import ISection_MS
+from src.sections.section_ms import ISection_MS
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
@@ -31,10 +31,11 @@ sect1.summary()
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 19.5 #[m]
 # numero de elementos pares para que exista un nodo en el centro
-nelems = 150 
-# Con 150 elementos mu_cr = 8.0760, error con Ansys delta = 0.14%
-# Con 250 elementos mu_cr = 8.0911, error con Ansys delta = 0.32%
-# Con 350 elementos mu_cr = 8.0978, error con Ansys delta = 0.41%
+nelems = 400
+# Con 150 elementos mu_cr = 4.7465, error con Ansys delta = 0.57%
+# Con 250 elementos mu_cr = 4.7460, error con Ansys delta = 0.56%
+# Con 400 elememtos mu_cr = 4.7458, error con Ansys delta = 0.56%
+
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -64,10 +65,13 @@ lator_restraints = np.array([
 
 
 
-# ----- CARGAS NODALES --------
-nodal_loads = np.array([
-    [nelems/4,    0, -10000, 0]
-])
+# ----- CARGAS DE ELEMENTO --------
+# Cargas distribuida uniforme
+elem_loads = []
+for e in range(nelems//2):
+    elem_loads.append([e,   0, -3000, 0, -3000]) # id_elem, q1i, q2i, q1j, q2j
+
+elem_loads = np.array(elem_loads)
 
 
 
@@ -80,15 +84,13 @@ model.add_nodes(coordinates)
 model.add_uniform_elements(elements_data)
 model.add_verax_restraints(verax_restraints)
 model.add_lator_restraints(lator_restraints)
-model.add_nodal_loads(nodal_loads)
+model.add_elem_loads(elem_loads)
 
 
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
 solver1 = StaticSolver(model)
 verax_disps, verax_react = solver1.solve()
-#print(verax_react)
-#print(verax_disps.reshape(model.nnods, model.nvrx_dofn))
 
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)

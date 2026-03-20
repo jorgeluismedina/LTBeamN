@@ -1,10 +1,11 @@
 
 import numpy as np
 import scipy as sp
-from .base_beam import Beam
-from ..shape_funcs import N_hermite, dN_hermite, ddN_hermite
-from ..gauss_quad import gauss_1d
-from ..section_utils import interpolate_section
+from src.elements.base_beam import Beam
+from src.sections.section_utils import interpolate_section
+from src.shape_funcs import N_hermite, dN_hermite, ddN_hermite
+from src.gauss_quad import gauss_1d
+
 
 class LTBeamN(Beam):
     def __init__(self, mater, section_i, section_j, coord, conec, verax_dof, lator_dof):

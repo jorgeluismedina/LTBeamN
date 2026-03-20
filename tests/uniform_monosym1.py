@@ -1,4 +1,5 @@
 
+
 import sys
 import os
 # Añadir el directorio raíz del proyecto al sys.path
@@ -10,47 +11,37 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
-from src.sections import ISection_MS
-from src.section_utils import interpolate_multiple_sections
+from src.sections.section_ms import ISection_MS
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
 
 # Materiales
-material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2] # cambio a nu=0.3 por que LTBeamN no me deja cambiar a 0.2
+material1 = Material(E=2.1e11, nu=0.2, dens=1.0) #[N/m2]
 materials = [material1]
 
 # Secciones
-section1 = ISection_MS(h=0.3, bf1=0.20, bf2=0.20, 
-                       tw=0.01, tf1=0.015, tf2=0.015, r1=0.0, r2=0.0) #[m]
+sect1 = ISection_MS(h=0.3, bf1=0.2, bf2=0.12, tw=0.01, tf1=0.01, tf2=0.01, r1=0.01, r2=0.01) #[m]
 
-section2 = ISection_MS(h=0.2, bf1=0.15, bf2=0.15, 
-                       tw=0.01, tf1=0.015, tf2=0.015, r1=0.0, r2=0.0) #[m]
-
+sections = [sect1]
+sect1.summary()
 
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 5 #[m]
-nelems = 150 
+nelems = 28 #Con 25 elementos ya se alcanza el valor teorico de momento critico
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
-norm_coords = coordinates / L
-
-# Generacion de secciones
-sections = interpolate_multiple_sections(section1, section2, norm_coords)
-
-
-
 
 # Informacion de elementos
 elements_data = []
-for e in range(nelems):
-    # etype, mat_id, sec_id1, sec_id2, nodei, nodej
-    elements_data.append([2, 0, e, e+1, e, e+1]) 
 
+for e in range(nelems):
+    elements_data.append([1, 0, 0, e, e+1]) # etype, mat_id, sec_id, nodei, nodej
 elements_data = np.array(elements_data)
+
 
 
 # ----- RESTRICCIONES --------
@@ -65,12 +56,15 @@ lator_restraints = np.array([
 ])
 
 
+
 # ----- CARGAS NODALES --------
-# Carga de flexion pura unitaria
+# Carga de flexion pura unitaria en el centro de corte
 nodal_loads = np.array([
     [0,       0, 0, -1],
-    [nelems,  0, 0, 1]
+    [nelems,  0, 0,  1]
 ])
+
+
 
 
 # ----- CREACION Y SETEO DEL MODELO -------- 
@@ -78,14 +72,11 @@ model = StabilityModel()
 model.add_materials(materials)
 model.add_sections(sections)
 model.add_nodes(coordinates)
-model.add_tapered_elements(elements_data)
+model.add_uniform_elements(elements_data)
 model.add_verax_restraints(verax_restraints)
 model.add_lator_restraints(lator_restraints)
 model.add_nodal_loads(nodal_loads)
 
-
-print(model.elems[0].dh1, model.elems[0].dh2)
-print(model.elems[1].dh1, model.elems[1].dh2)
 
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
@@ -96,12 +87,23 @@ verax_disps, verax_react = solver1.solve()
 solver2 = StabilitySolver(model)
 mu_crs, modes = solver2.solve()
 
+
+# verificacion para flexion pura
+Iz = sect1.Iz
+Iw = sect1.Iw
+EIz = material1.E * Iz
+GIt = material1.G * sect1.It
+EIw = material1.E * Iw
+beta_z = sect1.beta_z
+
+
+M_critico_ana = np.pi**2 * EIz / L**2 * (np.abs(beta_z/2) + np.sqrt(beta_z**2/4 + GIt/EIz * L**2/np.pi**2 + Iw/Iz))
 M_critico_num = mu_crs[0]
 print(f"Momento Crítico Calculado: {M_critico_num/1000:.4f} kNm")
+print(f"Momento Crítico Teorico: {M_critico_ana/1000:.4f} kNm")
+print(mu_crs[0]/1000, mu_crs[1]/1000, mu_crs[2]/1000, mu_crs[3]/1000)
+ 
 
-
-
-#"""
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
 all_fields = solver1.generate_fields()
@@ -115,4 +117,3 @@ plot_deformed(model, all_diagrams[3])
 # Problema de estabilidad
 plot_buckling_modes(model, mu_crs, modes) 
 plt.show()
-#"""
