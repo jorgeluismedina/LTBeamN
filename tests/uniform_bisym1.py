@@ -43,7 +43,7 @@ elements_data = np.array(elements_data)
 # ----- RESTRICCIONES --------
 verax_restraints = np.array([
     [0,       1, 1, 0],
-    [nelems,  1, 1, 0]
+    [nelems,  0, 1, 0]
 ])
 
 lator_restraints = np.array([

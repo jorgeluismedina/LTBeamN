@@ -196,10 +196,10 @@ class LTBeamTap(Beam):
         Kg_ltr = np.zeros((8, 8))
         L = self.length
         
-        N1 = self.forces[0] # Axial izquierda
-        N2 = -self.forces[3] # Axial derecha
+        N1 = -self.forces[0] # Axial izquierda
+        N2 =  self.forces[3] # Axial derecha
         M1 = -self.forces[2] # Momento izquierda
-        M2 = self.forces[5]  # Momento derecha
+        M2 =  self.forces[5]  # Momento derecha
         V_z = (M1 - M2) / L  # Cortante
 
         

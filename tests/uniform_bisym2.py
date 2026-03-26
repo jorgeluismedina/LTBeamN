@@ -46,7 +46,7 @@ elements_data = np.array(elements_data)
 # ----- RESTRICCIONES --------
 verax_restraints = np.array([
     [0,       1, 1, 0],
-    [nelems,  1, 1, 0]
+    [nelems,  0, 1, 0]
 ])
 
 lator_restraints = np.array([
@@ -60,7 +60,7 @@ lator_restraints = np.array([
 # Carga distribuida uniforme unitaria
 elem_loads = []
 for e in range(nelems):
-    elem_loads.append([e,   0, -1000, 0, -1000]) # id_elem, q1i, q2i, q1j, q2j
+    elem_loads.append([e,   0, -1000, 0, -1000])#,   0, 0]) # id_elem, q1i, q2i, q1j, q2j
 elem_loads = np.array(elem_loads)
 
 

@@ -23,7 +23,21 @@ class StabilitySolver():
         for elem in self.model.elems:
             elem.update_lator_Kg()
             Kg_ltr[np.ix_(elem.ltr_dof, elem.ltr_dof)] += elem.Kg_ltr
+
+        # Añadir un for para incrementar el aporte de las cargas nodales verticales
         
+        #zG = self.model.elems[0].section.zG # esta respecto de la fibra inferior
+        #zS = self.model.elems[0].zS # esta respecto del centroide
+        #h  = self.model.elems[0].h # altura total de la seccion
+
+        # Posiciones de carga respecto al centro de corte
+        #load_pos = [
+        #    0.0,          # Centro de corte
+        #    -zS,          # Centro de gravedad
+        #    -(zG + zS),   # Ala inferior
+        #    h - (zG + zS) # Ala superior
+        #]
+        #  
         return Kg_ltr
     
     def process_lator_restraints(self):

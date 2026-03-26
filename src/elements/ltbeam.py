@@ -106,6 +106,29 @@ class LTBeam(Beam):
         ]) 
 
         return matrix
+    
+    def NiNj_1_xi_matrix(self):
+        """ Integral (1-xi) * (Ni * Nj) función de forma cúbica Hermite """
+        L = self.length
+        matrix = np.array([
+            [ 240,      30*L,      54,    -14*L   ],
+            [ 30*L,     5*L**2,    12*L,   -3*L**2 ],
+            [ 54,       12*L,      72,    -14*L   ],
+            [ -14*L,   -3*L**2,   -14*L,    3*L**2  ]
+        ]) * L / 840.0
+        return matrix
+    
+    def NiNj_xi_matrix(self):
+        """ Integral (xi) * (Ni * Nj) función de forma cúbica Hermite """
+        L = self.length
+        matrix = np.array([
+            [ 72,      14*L,      54,     -12*L   ],
+            [ 14*L,     3*L**2,    14*L,   -3*L**2 ],
+            [ 54,       14*L,      240,   -30*L   ],
+            [ -12*L,   -3*L**2,   -30*L,   5*L**2  ]
+        ]) * L / 840.0
+        return matrix
+
 
     
     def compute_verax_K0(self):
@@ -148,8 +171,8 @@ class LTBeam(Beam):
         zs = self.section.zS
         i02 = self.section.i0**2
 
-        N1 =  self.forces[0]
-        N2 = -self.forces[3]
+        N1 = -self.forces[0] # self.forces[0]
+        N2 =  self.forces[3] # -self.forces[3]
             
         # Matriz base
         N_base = (N1 * self.dNidNj_1_xi_matrix() + 
@@ -199,15 +222,52 @@ class LTBeam(Beam):
         KgMV[self.idx_tv] += block_vt.T 
 
         return KgMV
+    '''
+    def compute_lator_KgQ(self):
+        """ Matriz geométrica por altura de carga transversal distribuida (8x8) """
+        qzi = self.load_intensities[1]
+        qzj = self.load_intensities[3]
+        ez = self.load_heights[1]
+        
+        # Integración exacta para carga lineal: 
+        # qz(xi) = qzi*(1-xi) + qzj*xi
+        Q_base = (qzi * self.NiNj_1_xi_matrix() + 
+                  qzj * self.NiNj_xi_matrix())
+
+        KgQ = np.zeros((8, 8))
+        # Nota: El signo depende de si ez y qz van en la misma dirección (hacia abajo)
+        KgQ[self.idx_tt] += ez * Q_base # Bloque t-t (torsion)
+
+        return KgQ
+
+    '''
+    
     
 
-    def add_loads(self, qxi, qzi, qxj, qzj):
+    def add_loads(self, qxi, qzi, qxj, qzj):#, qxpos, qzpos):
         # Añadir en coordenadas locales
         # qxi = intensidad en el nodo i en direccion de la barra
         # qxj = intensidad en el nodo j en direccion de la barra
         # qzi = intensidad en el nodo i en direccion perpendicular de la barra
         # qzj = intensidad en el nodo j en direccion perpendicular de la barra
+        # qxpos = posicion (altura) de aplicacion de la carga axial
+        # qzpos = posicion (altura) de aplicacion de la carga axial
         self.load_intensities = [qxi, qzi, qxj, qzj]
+        
+        #zG = self.section.zG # esta respecto de la fibra inferior
+        #zS = self.section.zS # esta respecto del centroide
+        #h  = self.section.h # altura total de la seccion
+
+        # Posiciones de carga respecto al centro de corte
+        #load_pos = [
+        #    0.0,          # Centro de corte
+        #    -zS,          # Centro de gravedad
+        #    -(zG + zS),   # Ala inferior
+        #    h - (zG + zS) # Ala superior
+        #]
+        
+        #self.load_heights = [load_pos[qxpos], load_pos[qzpos]]
+        
         L = self.length
 
         self.loads[0] =  (qxi/3 + qxj/6) * L
@@ -230,7 +290,8 @@ class LTBeam(Beam):
         """ Actualiza la matriz geometrica con fuerzas internas """
         KgN = self.compute_lator_KgN()
         KgMV = self.compute_lator_KgMV()
-        self.Kg_ltr = KgN + KgMV
+        #KgQ = self.compute_lator_KgQ()
+        self.Kg_ltr = KgN + KgMV# + KgQ
 
 
     def get_fields(self):
@@ -274,3 +335,6 @@ class LTBeam(Beam):
         w[np.abs(w) < 1e-12] = 0
 
         return x, N, V, M, u, w
+    
+
+    

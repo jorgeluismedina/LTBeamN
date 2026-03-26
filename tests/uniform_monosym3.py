@@ -15,13 +15,15 @@ from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
 
+# Script main para la prueba
+
 # Materiales
 material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2]
 materials = [material1]
 
 # Secciones
-sect1 = ISection_MS(h=0.3, bf1=0.2, bf2=0.12, 
-                    tw=0.01, tf1=0.01, tf2=0.01, 
+sect1 = ISection_MS(h=0.3, bf1=0.2, bf2=0.15, 
+                    tw=0.01, tf1=0.015, tf2=0.015, 
                     r1=0.01, r2=0.01) #[m]
 sections = [sect1]
 
@@ -46,13 +48,13 @@ elements_data = np.array(elements_data)
 
 # ----- RESTRICCIONES --------
 verax_restraints = np.array([
-    [0,       1, 1, 0],
-    [nelems,  0, 1, 0]
+    [0,       1, 1, 0], # u=0, w=0, w,x=libre
+    [nelems,  0, 1, 0]  # u=libre, w=0, w,x=libre
 ])
 
 lator_restraints = np.array([
-    [0,       1, 0, 1, 0],
-    [nelems,  1, 0, 1, 0]
+    [0,       1, 0, 1, 0], # v=0, v,x=libre, theta=0, theta,x=libre
+    [nelems,  1, 0, 1, 0]  # v=0, v,x=libre, theta=0, theta,x=libre
 ])
 
 
@@ -61,7 +63,7 @@ lator_restraints = np.array([
 # Carga distribuida uniforme unitaria
 elem_loads = []
 for e in range(nelems):
-    elem_loads.append([e,   0, -1000, 0, -1000])#, 0, 0]) # id_elem, q1i, q2i, q1j, q2j, qx_pos, qz_pos
+    elem_loads.append([e,   5000, -1000, 5000, -1000])#,   0, 0]) # id_elem, q1i, q2i, q1j, q2j
 elem_loads = np.array(elem_loads)
 
 
@@ -78,19 +80,18 @@ model.add_lator_restraints(lator_restraints)
 model.add_elem_loads(elem_loads)
 
 
-#print(model.elems[0].load_heights)
-
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
 solver1 = StaticSolver(model)
 verax_disps, verax_react = solver1.solve()
+print(model.elems[0].forces)
 
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)
 mu_crs, modes = solver2.solve()
 
 # Resultados y comparacion
-mu_cr_ltbeamn = 60.89
+mu_cr_ltbeamn = 225.17
 mu_cr = mu_crs[0]
 
 print(f"Factor de carga critico μ_cr (PyLTB):   {mu_cr:.4f}")

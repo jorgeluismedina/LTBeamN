@@ -100,16 +100,22 @@ class StabilityModel():
         """ Añade cargas verticales y axiales en coordenadas locales"""
         self.loaded_nodes = list(nodal_loads_data[:,0].astype(int))
         self.nodal_loads = nodal_loads_data[:,1:].astype(float)
+        #self.nodal_loads = nodal_loads_data[:,1:4].astype(float)
+        #self.nodal_load_pos = nodal_loads_data[:,4:].astype(int)
 
     def add_elem_loads(self, elem_loads_data):
         """ Añade cargas verticales de elemento en coordenads locales"""
         self.loaded_elems = list(elem_loads_data[:,0].astype(int))
         self.elem_loads = elem_loads_data[:,1:].astype(float)
+        #self.elem_loads = elem_loads_data[:,1:5].astype(float)
+        #self.elem_loads_pos = elem_loads_data[:,5:].astype(int)
 
         for load_data in elem_loads_data:
             id_elem = int(load_data[0])
             loads = load_data[1:].astype(float)
-            self.elems[id_elem].add_loads(*loads)
+            #loads = load_data[1:5].astype(float)
+            #pos = load_data[5:].astype(int)
+            self.elems[id_elem].add_loads(*loads)#, *pos)
 
 
 
