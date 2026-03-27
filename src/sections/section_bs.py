@@ -64,6 +64,16 @@ class ISection_BS:
     def compute_polar_radius(self): #respecto al centro de corte
         self.i0 = np.sqrt((self.Iy + self.Iz) / self.A)
 
+    def get_load_height(self, pos):
+        """
+        pos_code:
+            0 → centro de corte  (ez = 0,      sección bisimétrica: SC = centroide)
+            1 → centroide        (ez = -zS = 0)
+            2 → ala inferior     (ez = -h/2)
+            3 → ala superior     (ez = +h/2)
+        """
+        return [0.0, -self.zS, -(self.zG + self.zS), self.h - (self.zG + self.zS)][pos]
+
     def summary(self):
         print("\n" + "="*50)
         print(" I-SECTION (BISYMMETRIC) – GEOMETRY & PROPERTIES")

@@ -25,7 +25,6 @@ materials = [material1]
 sect1 = ISection_MS(h=0.3, bf1=0.2, bf2=0.15, 
                     tw=0.01, tf1=0.015, tf2=0.015, 
                     r1=0.01, r2=0.01) #[m]
-sections = [sect1]
 
 
 
@@ -37,11 +36,15 @@ nelems = 50 #Con 25 elementos ya se alcanza el valor teorico de momento critico
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
 
+# Generacion de secciones
+node_sections = [sect1] * coordinates.shape[0]
+
 # Informacion de elementos
 elements_data = []
 
 for e in range(nelems):
-    elements_data.append([1, 0, 0, e, e+1]) # etype, mat_id, sec_id, nodei, nodej
+    # formato: [etype, mat_id, nodei, nodej]
+    elements_data.append([0, 0, e, e+1])
 elements_data = np.array(elements_data)
 
 
@@ -63,7 +66,7 @@ lator_restraints = np.array([
 # Carga distribuida uniforme unitaria
 elem_loads = []
 for e in range(nelems):
-    elem_loads.append([e,   5000, -1000, 5000, -1000])#,   0, 0]) # id_elem, q1i, q2i, q1j, q2j
+    elem_loads.append([e, 0,   5000.0, -1000.0, 5000.0, -1000.0])
 elem_loads = np.array(elem_loads)
 
 
@@ -72,7 +75,7 @@ elem_loads = np.array(elem_loads)
 # ----- CREACION Y SETEO DEL MODELO -------- 
 model = StabilityModel()
 model.add_materials(materials)
-model.add_sections(sections)
+model.add_sections(node_sections)
 model.add_nodes(coordinates)
 model.add_uniform_elements(elements_data)
 model.add_verax_restraints(verax_restraints)

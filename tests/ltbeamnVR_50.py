@@ -21,9 +21,7 @@ materials = [material1]
 
 # Secciones
 sect1 = ISection_BS(h=0.3, bf=0.2, tw=0.010, tf=0.015, r=0.0) #[m]
-
-sections = [sect1]
-sect1.summary()
+#sect1.summary()
 
 
 
@@ -37,11 +35,16 @@ nelems = 200
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
-elements_data = []
+
+# Generacion de secciones
+node_sections = [sect1] * coordinates.shape[0]
+
 
 # Informacion de elementos
+elements_data = []
 for e in range(nelems):
-    elements_data.append([1, 0, 0, e, e+1]) # etype, mat_id, sec_id, nodei, nodej
+    # formato: [etype, mat_id, nodei, nodej]
+    elements_data.append([0, 0, e, e+1])
 elements_data = np.array(elements_data)
 
 
@@ -65,8 +68,8 @@ lator_restraints = np.array([
 
 # ----- CARGAS NODALES --------
 nodal_loads = np.array([
-    [nelems/4,    0, -10000, 0],
-    [3*nelems/4,  0, -10000, 0]
+    [  nelems/4, 0,   0.0, -10000.0, 0.0],
+    [3*nelems/4, 0,   0.0, -10000.0, 0.0]
 ])
 
 
@@ -75,7 +78,7 @@ nodal_loads = np.array([
 # ----- CREACION Y SETEO DEL MODELO -------- 
 model = StabilityModel()
 model.add_materials(materials)
-model.add_sections(sections)
+model.add_sections(node_sections)
 model.add_nodes(coordinates)
 model.add_uniform_elements(elements_data)
 model.add_verax_restraints(verax_restraints)
@@ -87,13 +90,21 @@ model.add_nodal_loads(nodal_loads)
 # Resolucion del problema estatico
 solver1 = StaticSolver(model)
 verax_disps, verax_react = solver1.solve()
-#print(verax_react)
-#print(verax_disps.reshape(model.nnods, model.nvrx_dofn))
 
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)
 mu_crs, modes = solver2.solve()
-print(f"factor de carga critico μ_cr: {mu_crs[0]:.4f}")
+
+# Resultados y comparacion
+mu_cr = mu_crs[0]
+mu_cr_ansys = 14.852
+mu_cr_ltbeamn = 14.7393
+
+print(f"Factor de carga critico μ_cr (PyLTB):   {mu_cr:.4f}")
+print(f"Factor de carga critico μ_cr (Ansys):   {mu_cr_ansys:.4f}")
+print(f"Factor de carga critico μ_cr (LTBeamN): {mu_cr_ltbeamn:.4f}")
+print(f"Diff de resultados con Ansys:   {abs(mu_cr - mu_cr_ansys)/mu_cr_ansys * 100:.2f} %")
+print(f"Diff de resultados con LTBeamN: {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn * 100:.2f} %")
 
  
 

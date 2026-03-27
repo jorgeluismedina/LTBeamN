@@ -17,7 +17,7 @@ from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
 
 # Materiales
-material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2] # cambio a nu=0.3 por que LTBeamN no me deja cambiar a 0.2
+material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2] 
 materials = [material1]
 
 # Secciones
@@ -39,16 +39,13 @@ coordinates = np.linspace(0, L, nelems+1)
 norm_coords = coordinates / L
 
 # Generacion de secciones
-sections = interpolate_multiple_sections(section1, section2, norm_coords)
-
-
+node_sections = interpolate_multiple_sections(section1, section2, norm_coords)
 
 
 # Informacion de elementos
 elements_data = []
 for e in range(nelems):
-    # etype, mat_id, sec_id1, sec_id2, nodei, nodej
-    elements_data.append([2, 0, e, e+1, e, e+1]) 
+    elements_data.append([1, 0, e, e+1]) 
 
 elements_data = np.array(elements_data)
 
@@ -68,15 +65,15 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga de flexion pura unitaria
 nodal_loads = np.array([
-    [0,       0, 0, 200],
-    [nelems,  0, 0, -800]
+    [0, 0,       0.0, 0.0,  200000.0],
+    [nelems, 0,  0.0, 0.0, -800000.0]
 ])
 
 
 # ----- CREACION Y SETEO DEL MODELO -------- 
 model = StabilityModel()
 model.add_materials(materials)
-model.add_sections(sections)
+model.add_sections(node_sections)
 model.add_nodes(coordinates)
 model.add_tapered_elements(elements_data)
 model.add_verax_restraints(verax_restraints)
@@ -96,8 +93,17 @@ verax_disps, verax_react = solver1.solve()
 solver2 = StabilitySolver(model)
 mu_crs, modes = solver2.solve()
 
-M_critico_num = mu_crs[0]
-print(f"Momento Crítico Calculado: {M_critico_num/1000:.4f} kNm")
+# Resultados y comparacion
+mu_cr = mu_crs[0]
+mu_cr_ansys = 4.7321
+mu_cr_ltbeamn = 4.764
+
+print(f"Factor de carga critico μ_cr (PyLTB):   {mu_cr:.4f}")
+print(f"Factor de carga critico μ_cr (Ansys):   {mu_cr_ansys:.4f}")
+print(f"Factor de carga critico μ_cr (LTBeamN): {mu_cr_ltbeamn:.4f}")
+print(f"Diff de resultados con Ansys:   {abs(mu_cr - mu_cr_ansys)/mu_cr_ansys * 100:.2f} %")
+print(f"Diff de resultados con LTBeamN: {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn * 100:.2f} %")
+
 
 
 

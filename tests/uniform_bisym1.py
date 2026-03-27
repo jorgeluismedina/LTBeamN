@@ -21,7 +21,6 @@ materials = [material1]
 
 # Secciones
 sect1 = ISection_BS(h=0.3, bf=0.15, tw=0.015, tf=0.015, r=0.01) #[m]
-sections = [sect1]
 sect1.summary()
 
 
@@ -31,11 +30,17 @@ nelems = 25 #Con 25 elementos ya se alcanza el valor teorico de momento critico
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
-elements_data = []
+
+# Generacion de secciones
+node_sections = [sect1] * coordinates.shape[0]
+
 
 # Informacion de elementos
+elements_data = []
+
 for e in range(nelems):
-    elements_data.append([1, 0, 0, e, e+1]) # etype, mat_id, sec_id, nodei, nodej
+    # formato: [etype, mat_id, nodei, nodej]
+    elements_data.append([0, 0, e, e+1])
 elements_data = np.array(elements_data)
 
 
@@ -55,8 +60,8 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga de flexion pura unitaria
 nodal_loads = np.array([
-    [0,       0, 0, -1000],
-    [nelems,  0, 0,  1000]
+    [0,      0,   0.0, 0.0, -1000.0],
+    [nelems, 0,   0.0, 0.0,  1000.0]
 ])
 
 
@@ -66,7 +71,7 @@ nodal_loads = np.array([
 # ----- CREACION Y SETEO DEL MODELO -------- 
 model = StabilityModel()
 model.add_materials(materials)
-model.add_sections(sections)
+model.add_sections(node_sections)
 model.add_nodes(coordinates)
 model.add_uniform_elements(elements_data)
 model.add_verax_restraints(verax_restraints)
@@ -78,8 +83,6 @@ model.add_nodal_loads(nodal_loads)
 # Resolucion del problema estatico
 solver1 = StaticSolver(model)
 verax_disps, verax_react = solver1.solve()
-#print(model.elems[0].K0_ltr)
-#print(verax_disps.reshape(model.nnods, model.nvrx_dofn))
 
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)

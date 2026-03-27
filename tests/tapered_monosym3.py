@@ -39,16 +39,14 @@ coordinates = np.linspace(0, L, nelems+1)
 norm_coords = coordinates / L
 
 # Generacion de secciones
-sections = interpolate_multiple_sections(section1, section2, norm_coords)
-
-
+node_sections = interpolate_multiple_sections(section1, section2, norm_coords)
 
 
 # Informacion de elementos
 elements_data = []
 for e in range(nelems):
-    # etype, mat_id, sec_id1, sec_id2, nodei, nodej
-    elements_data.append([2, 0, e, e+1, e, e+1]) 
+    # formato: [etype, mat_id, nodei, nodej]
+    elements_data.append([1, 0, e, e+1])
 
 elements_data = np.array(elements_data)
 
@@ -69,14 +67,14 @@ lator_restraints = np.array([
 # Carga distribuida uniforme unitaria
 elem_loads = []
 for e in range(nelems):
-    elem_loads.append([e,   5000, -1000, 5000, -1000]) # id_elem, qxi, qzi, qxj, qzj
+    elem_loads.append([e, 0,    5000.0, -1000.0, 5000.0, -1000.0])
 elem_loads = np.array(elem_loads)
 
 
 # ----- CREACION Y SETEO DEL MODELO -------- 
 model = StabilityModel()
 model.add_materials(materials)
-model.add_sections(sections)
+model.add_sections(node_sections)
 model.add_nodes(coordinates)
 model.add_tapered_elements(elements_data)
 model.add_verax_restraints(verax_restraints)
@@ -89,8 +87,6 @@ model.add_elem_loads(elem_loads)
 solver1 = StaticSolver(model)
 verax_disps, verax_react = solver1.solve()
 
-
-print(model.elems[0].forces / 1000)
 
 # Resolucion del problema de estabilidad
 solver2 = StabilitySolver(model)

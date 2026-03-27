@@ -39,7 +39,7 @@ coordinates = np.linspace(0, L, nelems+1)
 norm_coords = coordinates / L
 
 # Generacion de secciones
-sections = interpolate_multiple_sections(section1, section2, norm_coords)
+node_sections = interpolate_multiple_sections(section1, section2, norm_coords)
 
 
 
@@ -47,8 +47,8 @@ sections = interpolate_multiple_sections(section1, section2, norm_coords)
 # Informacion de elementos
 elements_data = []
 for e in range(nelems):
-    # etype, mat_id, sec_id1, sec_id2, nodei, nodej
-    elements_data.append([2, 0, e, e+1, e, e+1]) 
+    # formato: [etype, mat_id, nodei, nodej]
+    elements_data.append([1, 0, e, e+1]) 
 
 elements_data = np.array(elements_data)
 
@@ -68,15 +68,15 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga de flexion pura unitaria
 nodal_loads = np.array([
-    [0,       0, 0, -1000],
-    [nelems,  0, 0,  1000]
+    [0,      0,    0.0, 0.0, -1000.0],
+    [nelems, 0,    0.0, 0.0,  1000.0]
 ])
 
 
 # ----- CREACION Y SETEO DEL MODELO -------- 
 model = StabilityModel()
 model.add_materials(materials)
-model.add_sections(sections)
+model.add_sections(node_sections)
 model.add_nodes(coordinates)
 model.add_tapered_elements(elements_data)
 model.add_verax_restraints(verax_restraints)

@@ -20,6 +20,7 @@ class StabilityModel():
         # estatico
         self.loaded_nodes = [] # tags de nodos cargados
         self.nodal_loads = [] # cargas nodales
+        self.nodal_load_qzpos = [] # alturas de carga vertical
 
         self.imposed_disp_nodes = [] #tags
         self.imposed_disps = [] #values
@@ -40,9 +41,11 @@ class StabilityModel():
     def add_nodes(self, coordinates):
         self.coord = coordinates
         self.nnods = coordinates.shape[0]
+
         # DOF problema estatico (u, w, w,x)
         self.nvrx_dofs = self.nvrx_dofn * self.nnods # numero total de DOF problema estatico
         self.avrx_dof = np.arange(self.nvrx_dofs).reshape((self.nnods, self.nvrx_dofn)) # DOF ordenados por nodo
+
         # DOF problema de estabilidad (v, v,x, th, th,x)
         self.nltr_dofs = self.nltr_dofn * self.nnods # numero total de DOF problema estabilidad
         self.altr_dof = np.arange(self.nltr_dofs).reshape((self.nnods, self.nltr_dofn)) # DOF ordenados por nodo
@@ -50,10 +53,11 @@ class StabilityModel():
     def add_uniform_elements(self, elements_data):
         """ Funcion solo para añadir elementos barra"""
         for elem_data in elements_data:
-            etype, mat_id, sec_id, nodei, nodej = elem_data
+            #etype, mat_id, sec_id, nodei, nodej = elem_data
+            etype, mat_id, nodei, nodej = elem_data
 
             mat = self.materials[int(mat_id)]
-            sec = self.sections[int(sec_id)]
+            sec = self.sections[int(nodei)] #sec = self.sections[int(sec_id)]
             conec = [int(nodei), int(nodej)]
             
             coord = self.coord[conec]
@@ -69,11 +73,12 @@ class StabilityModel():
     def add_tapered_elements(self, elements_data):
         """ Funcion solo para añadir elementos barra"""
         for elem_data in elements_data:
-            etype, mat_id, sec1_id, sec2_id, nodei, nodej = elem_data
+            #etype, mat_id, sec1_id, sec2_id, nodei, nodej = elem_data
+            etype, mat_id, nodei, nodej = elem_data
 
             mat = self.materials[int(mat_id)]
-            seci = self.sections[int(sec1_id)]
-            secj = self.sections[int(sec2_id)]
+            seci = self.sections[int(nodei)] #seci = self.sections[int(sec1_id)]
+            secj = self.sections[int(nodej)] #secj = self.sections[int(sec2_id)]
             conec = [int(nodei), int(nodej)]
             
             coord = self.coord[conec]
@@ -97,25 +102,43 @@ class StabilityModel():
 
 
     def add_nodal_loads(self, nodal_loads_data):
-        """ Añade cargas verticales y axiales en coordenadas locales"""
+        """ 
+        Añade cargas verticales, axiales y de momento en coordenadas locales
+        Formato: [node, qx, qz, Mx, qzpos=0]
+            qzpos:
+                0 → centro de corte
+                1 → centroide
+                2 → ala inferior
+                3 → ala superior
+        """
         self.loaded_nodes = list(nodal_loads_data[:,0].astype(int))
-        self.nodal_loads = nodal_loads_data[:,1:].astype(float)
-        #self.nodal_loads = nodal_loads_data[:,1:4].astype(float)
-        #self.nodal_load_pos = nodal_loads_data[:,4:].astype(int)
+        self.nodal_load_pos = nodal_loads_data[:,1].astype(int)
+        #self.nodal_loads = nodal_loads_data[:,1:].astype(float)
+        self.nodal_loads = nodal_loads_data[:,2:].astype(float)
+        
 
     def add_elem_loads(self, elem_loads_data):
-        """ Añade cargas verticales de elemento en coordenads locales"""
+        """ 
+        Añade cargas verticales de elemento en coordenads locales
+        Formato: [id_elem, qxi, qzi, qxj, qzj, qzpos=0]
+             qzpos:
+                0 → centro de corte
+                1 → centroide
+                2 → ala inferior
+                3 → ala superior
+        """
         self.loaded_elems = list(elem_loads_data[:,0].astype(int))
-        self.elem_loads = elem_loads_data[:,1:].astype(float)
-        #self.elem_loads = elem_loads_data[:,1:5].astype(float)
-        #self.elem_loads_pos = elem_loads_data[:,5:].astype(int)
+        self.elem_loads_pos = elem_loads_data[:,1].astype(int)
+        #self.elem_loads = elem_loads_data[:,1:].astype(float)
+        self.elem_loads = elem_loads_data[:,2:].astype(float)
+        
 
         for load_data in elem_loads_data:
             id_elem = int(load_data[0])
-            loads = load_data[1:].astype(float)
-            #loads = load_data[1:5].astype(float)
-            #pos = load_data[5:].astype(int)
-            self.elems[id_elem].add_loads(*loads)#, *pos)
+            #loads = load_data[1:].astype(float)
+            pos = load_data[1].astype(int)
+            loads = load_data[2:].astype(float)
+            self.elems[id_elem].add_loads(pos, *loads)
 
 
 

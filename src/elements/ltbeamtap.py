@@ -28,6 +28,10 @@ class LTBeamTap(Beam):
         self.disps  = np.zeros(6)
         self.load_intensities = np.zeros(4)
 
+        # Posiciones de cargas distribuidas
+        self.qzpos = 0
+        self.qxpos = 0
+
         
 
     def init_geometry(self):
@@ -202,18 +206,22 @@ class LTBeamTap(Beam):
         M2 =  self.forces[5]  # Momento derecha
         V_z = (M1 - M2) / L  # Cortante
 
-        
-        for xi, w in zip(self.gpoints, self.gweights):
-            section = self.interpolate_at_gauss(xi)
+        qzi = self.load_intensities[1]
+        qzj = self.load_intensities[3]
 
-            # Interpolar fuerzas internas
-            M_xi = M1 * (1 - xi) + M2 * xi
-            N_xi = N1 * (1 - xi) + N2 * xi 
+        
+        for xi, w in zip(self.gpoints, self.gweights):  
+            # Interpolar fuerzas internas e intensidad de carga
+            M_xi  = M1 * (1 - xi) + M2 * xi
+            N_xi  = N1 * (1 - xi) + N2 * xi 
+            qz_xi = qzi * (1 - xi) + qzj * xi
 
             # Propiedades geométricas en la rebanada actual
-            zS = section.zS
-            i02 = section.i0**2
-            beta_z = section.beta_z
+            section = self.interpolate_at_gauss(xi)
+            zS      = section.zS
+            i02     = section.i0**2
+            beta_z  = section.beta_z
+            qzez    = section.get_load_height(self.qzpos)
 
             # Vectores de interpolación para ensamblar término a término
             vec_dv, vec_t, vec_dt = self.compute_interpolation_vectors(xi)
@@ -234,26 +242,33 @@ class LTBeamTap(Beam):
             
             # Término de Cortante Vz
             term_V = -V_z * (np.outer(vec_dv, vec_t) + np.outer(vec_t, vec_dv))
+
+            # Aporte de las cargas distribuidas
+            term_Q = qzez * qz_xi * np.outer(vec_t, vec_t)   # ec. (20) Beyer — θ²
+
             
-            Kg_ltr += (term_N + term_M + term_V) * w * L
+            Kg_ltr += (term_N + term_M + term_V + term_Q) * w * L
             
         self.Kg_ltr = Kg_ltr
 
     
 
-    def add_loads(self, qxi, qzi, qxj, qzj):
+    def add_loads(self, qzpos, qxi, qzi, qxj, qzj):
         # Añadir en coordenadas locales
         # qxi = intensidad en el nodo i en direccion de la barra
         # qxj = intensidad en el nodo j en direccion de la barra
         # qzi = intensidad en el nodo i en direccion perpendicular de la barra
         # qzj = intensidad en el nodo j en direccion perpendicular de la barra
-        self.load_intensities = [qxi, qzi, qxj, qzj]
-        L = self.length
+        # qxpos = posicion (altura) de aplicacion de la carga axial
+        # qzpos = posicion (altura) de aplicacion de la carga vertical
 
+        self.load_intensities = [qxi, qzi, qxj, qzj]
+        self.qzpos = int(qzpos)
+        
+        L = self.length
         self.loads[0] =  (qxi/3 + qxj/6) * L
         self.loads[1] =  (7*qzi + 3*qzj) * L / 20
         self.loads[2] =  (3*qzi + 2*qzj) * L**2 / 60
-
         self.loads[3] =  (qxj/3 + qxi/6) * L
         self.loads[4] =  (3*qzi + 7*qzj) * L / 20
         self.loads[5] = -(2*qzi + 3*qzj) * L**2 / 60
@@ -304,4 +319,4 @@ class LTBeamTap(Beam):
         w[np.abs(w) < 1e-12] = 0
 
         return x, N_diag, V_diag, M_diag, u, w
-        #"""
+    #"""

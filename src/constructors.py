@@ -46,8 +46,8 @@ class ElementFactory:
 
 
 # Registrar elemento disponible
-ElementFactory.register(1, LTBeam)
-ElementFactory.register(2, LTBeamTap)
+ElementFactory.register(0, LTBeam)
+ElementFactory.register(1, LTBeamTap)
 
 
 
