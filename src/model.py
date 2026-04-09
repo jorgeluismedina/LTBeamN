@@ -7,7 +7,7 @@ class StabilityModel():
     def __init__(self):
         self.nvrx_dofn = 3 # numero de DOF por nodo (u, w, w,x) 
         self.nltr_dofn = 4 # numero de DOF por nodo (v, v,x, th, th,x)
-        self.elems = []
+        self.elems = [] # cambiar el atributo a elements?
 
         # estatico
         self.svrx_nodes = [] # tags de nodos con DOF de flex. vertical y desp. axial restringidos
@@ -21,9 +21,6 @@ class StabilityModel():
         self.loaded_nodes = [] # tags de nodos cargados
         self.nodal_loads = [] # cargas nodales
         self.nodal_load_qzpos = [] # alturas de carga vertical
-
-        self.imposed_disp_nodes = [] #tags
-        self.imposed_disps = [] #values
 
         self.loaded_elems = [] #tags
 
@@ -39,7 +36,7 @@ class StabilityModel():
         return dof, vals
 
     def add_nodes(self, coordinates):
-        self.coord = coordinates
+        self.coord = coordinates # cambiar atributo a coordinates?
         self.nnods = coordinates.shape[0]
 
         # DOF problema estatico (u, w, w,x)
@@ -53,11 +50,10 @@ class StabilityModel():
     def add_uniform_elements(self, elements_data):
         """ Funcion solo para añadir elementos barra"""
         for elem_data in elements_data:
-            #etype, mat_id, sec_id, nodei, nodej = elem_data
             etype, mat_id, nodei, nodej = elem_data
 
             mat = self.materials[int(mat_id)]
-            sec = self.sections[int(nodei)] #sec = self.sections[int(sec_id)]
+            sec = self.sections[int(nodei)]
             conec = [int(nodei), int(nodej)]
             
             coord = self.coord[conec]
@@ -68,17 +64,18 @@ class StabilityModel():
                                                  coord, conec, 
                                                  vrx_dof, ltr_dof)
             self.elems.append(elem)
+        
+        self.nelems = len(self.elems)
             
 
     def add_tapered_elements(self, elements_data):
         """ Funcion solo para añadir elementos barra"""
         for elem_data in elements_data:
-            #etype, mat_id, sec1_id, sec2_id, nodei, nodej = elem_data
             etype, mat_id, nodei, nodej = elem_data
 
             mat = self.materials[int(mat_id)]
-            seci = self.sections[int(nodei)] #seci = self.sections[int(sec1_id)]
-            secj = self.sections[int(nodej)] #secj = self.sections[int(sec2_id)]
+            seci = self.sections[int(nodei)]
+            secj = self.sections[int(nodej)]
             conec = [int(nodei), int(nodej)]
             
             coord = self.coord[conec]
@@ -90,6 +87,8 @@ class StabilityModel():
                                                  coord, conec, 
                                                  vrx_dof, ltr_dof)
             self.elems.append(elem)
+        
+        self.nelems = len(self.elems)
 
 
     def add_verax_restraints(self, verax_restraints_data):
@@ -113,7 +112,6 @@ class StabilityModel():
         """
         self.loaded_nodes = list(nodal_loads_data[:,0].astype(int))
         self.nodal_load_pos = nodal_loads_data[:,1].astype(int)
-        #self.nodal_loads = nodal_loads_data[:,1:].astype(float)
         self.nodal_loads = nodal_loads_data[:,2:].astype(float)
         
 
@@ -129,13 +127,11 @@ class StabilityModel():
         """
         self.loaded_elems = list(elem_loads_data[:,0].astype(int))
         self.elem_loads_pos = elem_loads_data[:,1].astype(int)
-        #self.elem_loads = elem_loads_data[:,1:].astype(float)
         self.elem_loads = elem_loads_data[:,2:].astype(float)
         
 
         for load_data in elem_loads_data:
             id_elem = int(load_data[0])
-            #loads = load_data[1:].astype(float)
             pos = load_data[1].astype(int)
             loads = load_data[2:].astype(float)
             self.elems[id_elem].add_loads(pos, *loads)

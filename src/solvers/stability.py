@@ -75,20 +75,9 @@ class StabilitySolver():
 
         # Ordenamiento de autovalores de manera creciente
         idx = mu_crs.argsort()
-        mu_crs = mu_crs[idx]
+        self.mu_crs = mu_crs[idx]
         modes = modes[:, idx]
 
         # Reconstruccion de modos completos con apoyos incluidos
-        full_modes = np.zeros((self.model.nltr_dofs, mu_crs.size))
-        full_modes[free, :] = modes
-        return mu_crs, full_modes
-    
-    def reconstruct_full_modes(self, mu_crs, modes, nmodes = 5):
-        """ Reconstruye modos completos con apoyos incluidos."""
-        full_modes = np.zeros((self.model.nltr_dofs, nmodes))
-        free, supp = self.process_lator_restraints()
-        for i in range(nmodes):
-            full_modes[free, i] = modes[:, i]
-            full_modes[supp, i] = 0.0 # Apoyos sin desplazamiento
-        
-        return mu_crs[:nmodes], full_modes
+        self.modes = np.zeros((self.model.nltr_dofs, self.mu_crs.size))
+        self.modes[free, :] = modes

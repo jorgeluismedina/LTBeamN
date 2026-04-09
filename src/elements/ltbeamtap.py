@@ -54,8 +54,10 @@ class LTBeamTap(Beam):
         """
         Interpola sección en punto de Gauss y añade inercias del taper.
         """
-        delta = 1e-6
         L = self.length
+        #delta = 1e-6
+        dx = 1e-3 # 1 mm
+        delta = dx / L
         
         # Interpolar sección principal
         gsec = interpolate_section(self.section_i, self.section_j, xi)
@@ -79,7 +81,7 @@ class LTBeamTap(Beam):
         gsec.update_tapered_inertias(I_psi, I_wpsi, I_ypsi)
         
         return gsec
-    
+     
 
     def compute_interpolation_vectors(self, xi):
         """ Vectores para ensamblar term-wise la parte de Kg_ltr"""
@@ -145,7 +147,7 @@ class LTBeamTap(Beam):
     def compute_verax_D(self, gauss_section):
         """ Matriz constitutiva axial flexion vertical (2x2)"""
         EA  = self.mater.E * gauss_section.A
-        EIy = self.mater.E * gauss_section.Iz
+        EIy = self.mater.E * gauss_section.Iy
         return np.diag([EA, EIy])
     
     

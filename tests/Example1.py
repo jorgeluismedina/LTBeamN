@@ -17,22 +17,21 @@ from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
 
 # Materiales
-material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2] # cambio a nu=0.3 por que LTBeamN no me deja cambiar a 0.2
+material1 = Material(E=2.10e11, nu=0.3, dens=1.0)
 materials = [material1]
 
 # Secciones
-section1 = ISection_MS(h=0.3, bf1=0.20, bf2=0.20, 
-                       tw=0.01, tf1=0.015, tf2=0.015, r1=0.0, r2=0.0) #[m]
+section1 = ISection_MS(h=0.6, bf1=0.18, bf2=0.18, 
+                       tw=0.008, tf1=0.010, tf2=0.010, r1=0.00, r2=0.00) #[m]
 
-section2 = ISection_MS(h=0.2, bf1=0.15, bf2=0.15, 
-                       tw=0.01, tf1=0.015, tf2=0.015, r1=0.0, r2=0.0) #[m]
-
+section2 = ISection_MS(h=0.3, bf1=0.18, bf2=0.18, 
+                       tw=0.008, tf1=0.010, tf2=0.010, r1=0.00, r2=0.00) #[m]
 
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
-L = 5 #[m]
-nelems = 20 
+L = 4 #[m]
+nelems = 10
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -40,8 +39,6 @@ norm_coords = coordinates / L
 
 # Generacion de secciones
 node_sections = interpolate_multiple_sections(section1, section2, norm_coords)
-
-
 
 
 # Informacion de elementos
@@ -54,22 +51,20 @@ elements_data = np.array(elements_data)
 
 
 # ----- RESTRICCIONES --------
+# Empotramiento
 verax_restraints = np.array([
-    [0,       1, 1, 0],
-    [nelems,  0, 1, 0]
+    [0,       1, 1, 1],
 ])
-
+# Empotramiento
 lator_restraints = np.array([
-    [0,       1, 0, 1, 0],
-    [nelems,  1, 0, 1, 0]
+    [0,       1, 1, 1, 1],
 ])
 
 
 # ----- CARGAS NODALES --------
-# Carga de flexion pura unitaria
+# Carga puntual en la punta sobre la mesa superior
 nodal_loads = np.array([
-    [0,      0,    0.0, 0.0, -1000.0],
-    [nelems, 0,    0.0, 0.0,  1000.0]
+    [nelems, 3,   0.0, -1000.0, 0.0]
 ])
 
 
@@ -84,6 +79,7 @@ model.add_lator_restraints(lator_restraints)
 model.add_nodal_loads(nodal_loads)
 
 
+
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
 solver1 = StaticSolver(model)
@@ -95,8 +91,8 @@ solver2 = StabilitySolver(model)
 solver2.solve()
 mu_cr = solver2.mu_crs[0]
 
-# Resultados y comparacion 
-mu_cr_ltbeamn = 241.83
+# Resultados y comparacion
+mu_cr_ltbeamn = 44.32
 
 print("\n" + "="*55)
 print(" ANALYSIS RESULTS ".center(55))
@@ -120,7 +116,7 @@ print("\n" + "="*55 + "\n")
 
 
 
-"""
+#"""
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
 all_diagrams = solver1.prepare_diagrams()
@@ -133,4 +129,4 @@ plot_deformed(model, all_diagrams[3])
 # Problema de estabilidad
 plot_buckling_modes(model, solver2.mu_crs, solver2.modes) 
 plt.show()
-"""
+#"""

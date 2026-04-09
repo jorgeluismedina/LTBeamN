@@ -28,7 +28,7 @@ sect1 = ISection_MS(h=0.3, bf1=0.2, bf2=0.12, tw=0.01, tf1=0.01, tf2=0.01, r1=0.
 
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 5 #[m]
-nelems = 50 #Con 25 elementos ya se alcanza el valor teorico de momento critico
+nelems = 24 #Con 25 elementos ya se alcanza el valor teorico de momento critico
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -83,40 +83,42 @@ model.add_nodal_loads(nodal_loads)
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
 solver1 = StaticSolver(model)
-verax_disps, verax_react = solver1.solve()
+solver1.solve()
+maxN, maxV, maxM, maxw = solver1.max_vals() 
 
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)
-mu_crs, modes = solver2.solve()
+solver2.solve()
+mu_cr = solver2.mu_crs[0]
 
 
 # Resultados y comparacion
-Iz = sect1.Iz
-Iw = sect1.Iw
-EIz = material1.E * Iz
-GIt = material1.G * sect1.It
-EIw = material1.E * Iw
-beta_z = sect1.beta_z
-
-
-mu_cr_ana = np.pi**2 * EIz / L**2 * (np.abs(beta_z/2) + 
-                                     np.sqrt(beta_z**2/4 + GIt/EIz * L**2/np.pi**2 + Iw/Iz)) /1000
-
-mu_cr_ana = np.pi / L * np.sqrt(EIz*GIt * (1 + (np.pi**2*EIw)/(L**2*GIt))) / 1000 
 mu_cr_ltbeamn = 204.12
-mu_cr = mu_crs[0]
 
-print(f"Factor de carga critico μ_cr (Real):    {mu_cr_ana:.4f}")
-print(f"Factor de carga critico μ_cr (PyLTB):   {mu_cr:.4f}")
-print(f"Factor de carga critico μ_cr (LTBeamN): {mu_cr_ltbeamn:.4f}")
-print(f"Error respecto al analitico:    {abs(mu_cr - mu_cr_ana)/mu_cr_ana * 100:.2f} %")
-print(f"Diff de resultados con LTBeamN: {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn * 100:.2f} %")
+print("\n" + "="*55)
+print(" ANALYSIS RESULTS ".center(55))
+print("="*55)
+
+print("\n MESH DATA")
+print(f"  Number of nodes:                 {model.nnods:>20}")
+print(f"  Number of elements:              {model.nelems:>20}")
+
+print("\n STATIC ANALYSIS")
+print(f"  Axial max.        Nmax:          {maxN/1e3:>16.4f} kN")
+print(f"  Shear max.        Vmax:          {maxV/1e3:>16.4f} kN")
+print(f"  Moment max.       Mmax:          {maxM/1e3:>16.4f} kNm")
+print(f"  Displacement max. w_max:         {maxw*1e3:>16.4f} mm")
+
+print("\n STABILITY ANALYSIS")
+print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
+print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn:>12.4f}")
+print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn*100:>11.2f} %")
+print("\n" + "="*55 + "\n")
  
 
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
-all_fields = solver1.generate_fields()
-all_diagrams = solver1.prepare_diagrams(all_fields)
+all_diagrams = solver1.prepare_diagrams()
 
 plot_diagram(model, all_diagrams[0], "Axial Force Diagram")
 plot_diagram(model, all_diagrams[1], "Shear Force Diagram")
@@ -124,5 +126,5 @@ plot_diagram(model, all_diagrams[2], "Bending Moment Diagram")
 plot_deformed(model, all_diagrams[3])
 
 # Problema de estabilidad
-plot_buckling_modes(model, mu_crs, modes) 
+plot_buckling_modes(model, solver2.mu_crs, solver2.modes) 
 plt.show()

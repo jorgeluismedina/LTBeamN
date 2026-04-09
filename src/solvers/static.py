@@ -69,13 +69,13 @@ class StaticSolver():
         # Resuelve
         disps_f = cho_solve(cho_factor(K0_ff), F_f)
         
-        disps = np.zeros(self.model.nvrx_dofs)
-        disps[free] = disps_f
-        react = K0_sf @ disps_f - F_s
+        self.disps = np.zeros(self.model.nvrx_dofs)
+        self.disps[free] = disps_f
+        self.react = K0_sf @ disps_f - F_s
         
-        self.compute_internal_forces(disps)
+        self.compute_internal_forces(self.disps)
+        self.fields = [elem.get_fields() for elem in self.model.elems]
         
-        return disps, react
     
     def compute_internal_forces(self, glob_disps):
         """Calcula fuerzas internas verticales en elementos."""
@@ -83,70 +83,41 @@ class StaticSolver():
             elem.calculate_forces(glob_disps[elem.vrx_dof])
 
 
-    def generate_fields(self):
-        """Genera los diagramas locales"""
-        x_fields = []
-        N_fields = []
-        V_fields = []
-        M_fields = []
-        u_fields = []
-        w_fields = []
+    
+    def max_vals(self):
+        """Valores máximos de fuerzas internas y desplazamiento vertical."""
+        N = np.concatenate([f[1] for f in self.fields])
+        V = np.concatenate([f[2] for f in self.fields])
+        M = np.concatenate([f[3] for f in self.fields])
+        w = self.disps.reshape(self.model.nnods, self.model.nvrx_dofn)[:, 1]
+        return (N[np.argmax(np.abs(N))],
+                V[np.argmax(np.abs(V))],
+                M[np.argmax(np.abs(M))],
+                w[np.argmax(np.abs(w))])
 
-        for elem in self.model.elems:
-            x, N, V, M, u, w = elem.get_fields()
-            x_fields.append(x)
-            N_fields.append(N)
-            V_fields.append(V)
-            M_fields.append(M)
-            u_fields.append(u)
-            w_fields.append(w)
-
-        all_fields = [x_fields,
-                      N_fields,
-                      V_fields,
-                      M_fields,
-                      u_fields,
-                      w_fields]
-        
-        return all_fields
     
     
-    def prepare_diagrams(self, all_fields, esc1=0.6, esc2=0.8, esc3=0.6):
-        all_x, all_N, all_V, all_M, all_u, all_w = all_fields
+    def prepare_diagrams(self, esc1=0.6, esc2=0.8, esc3=0.6):
+        """Diagrama listo para plotear, sin args externos."""
+        all_N = np.concatenate([f[1] for f in self.fields])
+        all_V = np.concatenate([f[2] for f in self.fields])
+        all_M = np.concatenate([f[3] for f in self.fields])
+        all_u = np.concatenate([f[4] for f in self.fields])
+        all_w = np.concatenate([f[5] for f in self.fields])
 
-        max_N = np.max(np.abs(np.asarray(all_N))) or 1
-        max_V = np.max(np.abs(np.asarray(all_V))) or 1
-        max_M = np.max(np.abs(np.asarray(all_M))) or 1
-        max_u = np.max(np.abs(np.asarray(all_u)))
-        max_w = np.max(np.abs(np.asarray(all_w)))
-        max_def = max(max_u, max_w) or 1
+        max_N   = np.max(np.abs(all_N)) or 1
+        max_V   = np.max(np.abs(all_V)) or 1
+        max_M   = np.max(np.abs(all_M)) or 1
+        max_def = max(np.max(np.abs(all_u)), np.max(np.abs(all_w))) or 1
 
-        N_globals = []
-        V_globals = []
-        M_globals = []
-        def_shapes = []
+        N_globals, V_globals, M_globals, def_shapes = [], [], [], []
 
-        for e, elem in enumerate(self.model.elems):
-            x = all_x[e]
-            X0 = elem.coord[0]
-            
-            # Coordenadas globales
-            X = X0 + x
-            
-            # Diagramas (perpendiculares a X, en Y)
-            N_diag_Y = all_N[e] / max_N * esc1
-            V_diag_Y = all_V[e] / max_V * esc1
-            M_diag_Y = all_M[e] / max_M * esc2
-            
-            # Deformada
-            X_def = X + all_u[e] / max_def * esc3
-            Y_def = all_w[e] / max_def * esc3
-            
-            # Almacena
-            N_globals.append(np.vstack([X, N_diag_Y, all_N[e]]))
-            V_globals.append(np.vstack([X, V_diag_Y, all_V[e]]))
-            M_globals.append(np.vstack([X, M_diag_Y, all_M[e]]))
-            def_shapes.append(np.vstack([X_def, Y_def]))
+        for elem, (x, N, V, M, u, w) in zip(self.model.elems, self.fields):
+            X = elem.coord[0] + x
+            N_globals.append(np.vstack([X, N/max_N*esc1, N]))
+            V_globals.append(np.vstack([X, V/max_V*esc1, V]))
+            M_globals.append(np.vstack([X, M/max_M*esc2, M]))
+            def_shapes.append(np.vstack([X + u/max_def*esc3, w/max_def*esc3]))
 
         return N_globals, V_globals, M_globals, def_shapes
     

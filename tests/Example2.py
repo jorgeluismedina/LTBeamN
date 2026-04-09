@@ -17,22 +17,21 @@ from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
 
 # Materiales
-material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2] # cambio a nu=0.3 por que LTBeamN no me deja cambiar a 0.2
+material1 = Material(E=2.10e11, nu=0.3, dens=1.0)
 materials = [material1]
 
 # Secciones
-section1 = ISection_MS(h=0.3, bf1=0.20, bf2=0.20, 
-                       tw=0.01, tf1=0.015, tf2=0.015, r1=0.0, r2=0.0) #[m]
+section1 = ISection_MS(h=0.6127, bf1=0.15, bf2=0.15, 
+                       tw=0.0095, tf1=0.0127, tf2=0.0127, r1=0.00, r2=0.00) #[m]
 
-section2 = ISection_MS(h=0.2, bf1=0.15, bf2=0.15, 
-                       tw=0.01, tf1=0.015, tf2=0.015, r1=0.0, r2=0.0) #[m]
-
+section2 = ISection_MS(h=0.6127*0.2, bf1=0.15, bf2=0.15, 
+                       tw=0.0095, tf1=0.0127, tf2=0.0127, r1=0.00, r2=0.00) #[m]
 
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
-L = 5 #[m]
-nelems = 20 
+L = 4 #[m]
+nelems = 20
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -40,8 +39,6 @@ norm_coords = coordinates / L
 
 # Generacion de secciones
 node_sections = interpolate_multiple_sections(section1, section2, norm_coords)
-
-
 
 
 # Informacion de elementos
@@ -54,22 +51,23 @@ elements_data = np.array(elements_data)
 
 
 # ----- RESTRICCIONES --------
+# Empotramiento
 verax_restraints = np.array([
-    [0,       1, 1, 0],
-    [nelems,  0, 1, 0]
+    [0,       1, 1, 1],
 ])
-
+# Empotramiento
 lator_restraints = np.array([
-    [0,       1, 0, 1, 0],
-    [nelems,  1, 0, 1, 0]
+    [0,       1, 1, 1, 1],
 ])
 
 
 # ----- CARGAS NODALES --------
-# Carga de flexion pura unitaria
+# Carga puntual en la punta sobre la mesa superior
+idx = 2
+ratios = [0, 1, 2, 4]
+r = ratios[idx]
 nodal_loads = np.array([
-    [0,      0,    0.0, 0.0, -1000.0],
-    [nelems, 0,    0.0, 0.0,  1000.0]
+    [nelems, 3,   r*-50000.0, -50000.0, 0.0]
 ])
 
 
@@ -84,6 +82,7 @@ model.add_lator_restraints(lator_restraints)
 model.add_nodal_loads(nodal_loads)
 
 
+
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
 solver1 = StaticSolver(model)
@@ -95,8 +94,10 @@ solver2 = StabilitySolver(model)
 solver2.solve()
 mu_cr = solver2.mu_crs[0]
 
-# Resultados y comparacion 
-mu_cr_ltbeamn = 241.83
+# Resultados y comparacion
+mu_cr_ref = [1.979, 1.742, 1.475, 1.006]
+mu_cr_ltbeamn = [1.943, 1.722, 1.469, 1.010]
+
 
 print("\n" + "="*55)
 print(" ANALYSIS RESULTS ".center(55))
@@ -113,9 +114,12 @@ print(f"  Moment max.       Mmax:          {maxM/1e3:>16.4f} kNm")
 print(f"  Displacement max. w_max:         {maxw*1e3:>16.4f} mm")
 
 print("\n STABILITY ANALYSIS")
+print(f"  Ratio r=N/Q:                            {r:>12}")
 print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
-print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn:>12.4f}")
-print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn*100:>11.2f} %")
+print(f"  Critical load factor μ_cr (Reference):  {mu_cr_ref[idx]:>12.4f}")
+print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn[idx]:>12.4f}")
+print(f"  Result diff. with Reference:            {abs(mu_cr - mu_cr_ref[idx])/mu_cr_ref[idx]*100:>11.2f} %")
+print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn[idx])/mu_cr_ltbeamn[idx]*100:>11.2f} %")
 print("\n" + "="*55 + "\n")
 
 
