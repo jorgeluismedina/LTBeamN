@@ -17,6 +17,12 @@ class StabilityModel():
         self.sltr_nodes = [] # tags de nodos con DOF de flex. lateral y torsion restringidos
         self.ltr_restraints = [] # estados de restriccion (1 o 0) para cada DOF restringido
 
+        # apoyos elasticos laterales
+        self.spring_nodes = []
+        self.spring_pos = []
+        self.spring_kv = [] # rigidez traslacional lateral (v)
+        self.spring_kt = [] # rigidez torsional (theta)
+
         # estatico
         self.loaded_nodes = [] # tags de nodos cargados
         self.nodal_loads = [] # cargas nodales
@@ -92,12 +98,31 @@ class StabilityModel():
 
 
     def add_verax_restraints(self, verax_restraints_data):
-        self.svrx_nodes = list(verax_restraints_data[:,0].astype(int))
+        self.svrx_nodes     = list(verax_restraints_data[:,0].astype(int))
         self.vrx_restraints = verax_restraints_data[:,1:].astype(int)
 
     def add_lator_restraints(self, lator_restraints_data):
-        self.sltr_nodes = list(lator_restraints_data[:,0].astype(int))
+        self.sltr_nodes     = list(lator_restraints_data[:,0].astype(int))
         self.ltr_restraints = lator_restraints_data[:,1:].astype(int)
+
+    def add_lateral_springs(self, springs_data):
+        """
+        Apoyos elasticos nodales en el problema lateral-torsional.
+        Formato: [node, pos, kv, kt]
+            kv  : rigidez traslacional lateral [F/L]  (v-DOF)
+            kt  : rigidez torsional            [F·L]  (θ-DOF)
+            pos : posicion vertical en la seccion
+                0 → centro de corte
+                1 → centroide
+                2 → ala inferior
+                3 → ala superior
+            
+        Pasar 0 para omitir un tipo de muelle en un nodo.
+        """
+        self.spring_nodes = list(springs_data[:, 0].astype(int))
+        self.spring_pos   = springs_data[:, 1].astype(int)
+        self.spring_kv    = springs_data[:, 2].astype(float)
+        self.spring_kt    = springs_data[:, 3].astype(float)
 
 
     def add_nodal_loads(self, nodal_loads_data):
@@ -110,9 +135,9 @@ class StabilityModel():
                 2 → ala inferior
                 3 → ala superior
         """
-        self.loaded_nodes = list(nodal_loads_data[:,0].astype(int))
+        self.loaded_nodes   = list(nodal_loads_data[:,0].astype(int))
         self.nodal_load_pos = nodal_loads_data[:,1].astype(int)
-        self.nodal_loads = nodal_loads_data[:,2:].astype(float)
+        self.nodal_loads    = nodal_loads_data[:,2:].astype(float)
         
 
     def add_elem_loads(self, elem_loads_data):
@@ -125,15 +150,15 @@ class StabilityModel():
                 2 → ala inferior
                 3 → ala superior
         """
-        self.loaded_elems = list(elem_loads_data[:,0].astype(int))
+        self.loaded_elems   = list(elem_loads_data[:,0].astype(int))
         self.elem_loads_pos = elem_loads_data[:,1].astype(int)
-        self.elem_loads = elem_loads_data[:,2:].astype(float)
+        self.elem_loads     = elem_loads_data[:,2:].astype(float)
         
 
         for load_data in elem_loads_data:
             id_elem = int(load_data[0])
-            pos = load_data[1].astype(int)
-            loads = load_data[2:].astype(float)
+            pos     = load_data[1].astype(int)
+            loads   = load_data[2:].astype(float)
             self.elems[id_elem].add_loads(pos, *loads)
 
 

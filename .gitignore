@@ -9,6 +9,9 @@
 #Imagenes
 *.png
 
+# Pdfs
+*.pdf
+
 #HTML
 *.html
 

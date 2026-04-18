@@ -13,6 +13,21 @@ class StabilitySolver():
         K0_ltr = np.zeros((nltr_dofs, nltr_dofs))
         for elem in self.model.elems:
             K0_ltr[np.ix_(elem.ltr_dof, elem.ltr_dof)] += elem.K0_ltr
+
+        for i, node in enumerate(self.model.spring_nodes):
+            dof_v = self.model.altr_dof[node, 0]  # DOF v
+            dof_t = self.model.altr_dof[node, 2]  # DOF theta
+            kv = self.model.spring_kv[i]
+            kt = self.model.spring_kt[i]
+
+            pos = self.model.spring_pos[i]
+            sec = self.model.sections[node]
+            ez  = -sec.get_load_height(pos)
+
+            K0_ltr[dof_v, dof_v] += kv
+            K0_ltr[dof_v, dof_t] += kv * ez
+            K0_ltr[dof_t, dof_v] += kv * ez
+            K0_ltr[dof_t, dof_t] += kv * ez**2 + kt
         
         return K0_ltr
 
@@ -25,13 +40,14 @@ class StabilitySolver():
             Kg_ltr[np.ix_(elem.ltr_dof, elem.ltr_dof)] += elem.Kg_ltr
 
         for i, node in enumerate(self.model.loaded_nodes):
-            Pz  = self.model.nodal_loads[i, 1]        # carga vertical
+            dof_t = self.model.altr_dof[node, 2]      # DOF θ del nodo
+            Pz    = self.model.nodal_loads[i, 1]      # carga vertical
+
             pos = int(self.model.nodal_load_pos[i])   # código de altura
             sec = self.model.sections[node]
- 
-            ez = sec.get_load_height(pos)
-            theta_dof = self.model.altr_dof[node, 2]  # DOF θ del nodo
-            Kg_ltr[theta_dof, theta_dof] += ez * Pz 
+            ez  = sec.get_load_height(pos)
+            
+            Kg_ltr[dof_t, dof_t] += ez * Pz 
          
         return Kg_ltr
     
