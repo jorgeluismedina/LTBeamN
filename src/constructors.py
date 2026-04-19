@@ -2,8 +2,6 @@ from .elements.ltbeam import LTBeam
 from .elements.ltbeamtap import LTBeamTap
 
 
-
-
 class ElementFactory:
     """Factory para crear elementos"""
     
@@ -18,11 +16,10 @@ class ElementFactory:
     
     @classmethod
     def create_uniform(cls, etype, material, section, 
-                       coord, conec, 
-                       verax_dof, lator_dof):
-        """Crea instancia del elemento."""
+                       coord, conec, verax_dof, lator_dof):
+        """Crea instancia del elemento uniforme."""
         if etype not in cls.registry:
-            raise ValueError(f"Tipo de elemento no registrado: {etype}")
+            raise ValueError(f"Element type not supported: {etype}")
         
         return cls.registry[etype](material, section, 
                                    coord, conec, 
@@ -34,9 +31,10 @@ class ElementFactory:
                        section_i, section_j,
                        coord, conec,
                        verax_dof, lator_dof):
-        """Crea instancia del elemento."""
+        
+        """Crea instancia del elemento tapered."""
         if etype not in cls.registry:
-            raise ValueError(f"Tipo de elemento no registrado: {etype}")
+            raise ValueError(f"Element type not supported: {etype}")
         
         return cls.registry[etype](material, 
                                    section_i, section_j, 

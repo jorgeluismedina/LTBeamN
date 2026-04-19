@@ -95,7 +95,7 @@ solver2.solve()
 mu_cr = solver2.mu_crs[0]
 
 # Resultados y comparacion
-mu_cr_ref = [1.979, 1.742, 1.475, 1.006]
+mu_cr_ref     = [1.979, 1.742, 1.475, 1.006]
 mu_cr_ltbeamn = [1.943, 1.722, 1.469, 1.010]
 
 

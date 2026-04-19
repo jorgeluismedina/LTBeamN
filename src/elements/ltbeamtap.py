@@ -8,7 +8,8 @@ from src.gauss_quad import gauss_1d
 
 
 class LTBeamTap(Beam):
-    def __init__(self, mater, section_i, section_j, coord, conec, verax_dof, lator_dof):
+    def __init__(self, mater, section_i, section_j, coord, conec, 
+                 verax_dof, lator_dof):
         super().__init__(mater, coord, conec, verax_dof, lator_dof)
 
         self.section_i = section_i
@@ -37,54 +38,40 @@ class LTBeamTap(Beam):
     def init_geometry(self):
         vector = self.coord[1] - self.coord[0]
         self.length = sp.linalg.norm(vector)
-
-        # Derivadas de las alturas de las mesas respecto a zS para calcular I_ypsi       
+      
         h1_i = abs(self.section_i.zf1 - self.section_i.zS)
         h2_i = abs(self.section_i.zf2 - self.section_i.zS)
         
         h1_j = abs(self.section_j.zf1 - self.section_j.zS)
         h2_j = abs(self.section_j.zf2 - self.section_j.zS)
-        
+
+        # Derivadas de las distancias de las mesas respecto a zS para calcular I_ypsi
         self.dh1 = (h1_j - h1_i) / self.length
         self.dh2 = (h2_j - h2_i) / self.length
         
     
 
     def interpolate_at_gauss(self, xi):
-        """
-        Interpola sección en punto de Gauss y añade inercias del taper.
-        """
-        L = self.length
-        #delta = 1e-6
-        dx = 1e-3 # 1 mm
+        """Interpola sección en punto de Gauss y añade inercias del taper."""
+        L     = self.length
+        dx    = 1e-3        # 1 mm — paso para diferenciacion numerica
         delta = dx / L
         
-        # Interpolar sección principal
-        gsec = interpolate_section(self.section_i, self.section_j, xi)
-        
-        # Secciones para diferenciación numérica
+        gsec     = interpolate_section(self.section_i, self.section_j, xi)
         sec_plus = interpolate_section(self.section_i, self.section_j, xi + delta)
-        sec_minus = interpolate_section(self.section_i, self.section_j, xi - delta)
+        sec_minus= interpolate_section(self.section_i, self.section_j, xi - delta)
         
-        #h1 = gsec.zf1 - gsec.zS
-        #h2 = gsec.zf2 - gsec.zS
-        
-        # Calcular inercias del taper
-        #I_psi = 4 * (self.dh1**2 * gsec.Izf1 + self.dh2**2 * gsec.Izf2)
-        #I_wpsi = 2 * (h1 * self.dh1 * gsec.Izf1 + h2 * self.dh2 * gsec.Izf2)
-
+        # Inercias de taper (Andrade 2005 / Beyer 2015 Apendice A)
         I_psi = 2 * (sec_plus.Iw - 2*gsec.Iw + sec_minus.Iw) / (delta * L)**2
         I_wpsi = (sec_plus.Iw - sec_minus.Iw) / (2 * delta * L)
         I_ypsi = 2 * (self.dh1 * gsec.Izf1 - self.dh2 * gsec.Izf2) # Aproximacion
         
-        # Actualizar sección con inercias del taper
         gsec.update_tapered_inertias(I_psi, I_wpsi, I_ypsi)
-        
         return gsec
      
 
     def compute_interpolation_vectors(self, xi):
-        """ Vectores para ensamblar term-wise la parte de Kg_ltr"""
+        """ Vectores para ensamblar term-wise Kg_ltr"""
         L = self.length
         N = N_hermite(xi)
         dN = dN_hermite(xi)
@@ -130,7 +117,7 @@ class LTBeamTap(Beam):
         L = self.length
         dN = dN_hermite(xi)
         ddN = ddN_hermite(xi)
-         # corregir indices
+
         B = np.zeros((3,8))
         # Curvatura lateral: κ_v = d²v/dx²
         B[0, 0::4] = ddN[0::2] / L**2
@@ -145,14 +132,14 @@ class LTBeamTap(Beam):
         return B 
     
     def compute_verax_D(self, gauss_section):
-        """ Matriz constitutiva axial flexion vertical (2x2)"""
+        """ Matriz constitutiva axial-flexion vertical (2x2)"""
         EA  = self.mater.E * gauss_section.A
         EIy = self.mater.E * gauss_section.Iy
         return np.diag([EA, EIy])
     
     
     def compute_lator_D(self, gauss_section):
-        """ Matriz constitutiva torsion flexion lateral (3x3)"""
+        """ Matriz constitutiva torsion-flexion lateral (3x3)"""
         EIz = self.mater.E * gauss_section.Iz
         EIw = self.mater.E * gauss_section.Iw
         GIt = self.mater.G * gauss_section.It
@@ -177,7 +164,7 @@ class LTBeamTap(Beam):
         L = self.length
 
         for xi, w in zip(self.gpoints, self.gweights):
-            # Interpolar sección en punto de Gauss (UNA sola vez)
+            # Interpolar sección en punto de Gauss
             section = self.interpolate_at_gauss(xi)
 
             # Matrices constitutivas
@@ -211,7 +198,6 @@ class LTBeamTap(Beam):
         qzi = self.load_intensities[1]
         qzj = self.load_intensities[3]
 
-        
         for xi, w in zip(self.gpoints, self.gweights):  
             # Interpolar fuerzas internas e intensidad de carga
             M_xi  = M1 * (1 - xi) + M2 * xi
@@ -277,14 +263,13 @@ class LTBeamTap(Beam):
 
 
     def calculate_forces(self, glob_disps):
-        # A Coordenadas locales=globales
+        """ Calcula fuerzas internas """
         self.disps = glob_disps # ya son locales
         self.forces = self.K0_vrx @ glob_disps - self.loads
-        self.disps[np.abs(self.disps) < 1e-12] = 0
-        self.forces[np.abs(self.forces) < 1e-9] = 0
+        self.disps[ np.abs(self.disps)  < 1e-12] = 0
+        self.forces[np.abs(self.forces) < 1e-9 ] = 0
 
 
-    #"""
     def get_fields(self):
         L  = self.length
         x = np.linspace(0,L,3)
@@ -321,4 +306,3 @@ class LTBeamTap(Beam):
         w[np.abs(w) < 1e-12] = 0
 
         return x, N_diag, V_diag, M_diag, u, w
-    #"""

@@ -23,11 +23,10 @@ class StabilityModel():
         self.spring_kv = [] # rigidez traslacional lateral (v)
         self.spring_kt = [] # rigidez torsional (theta)
 
-        # estatico
+        # cargas estatico
         self.loaded_nodes = [] # tags de nodos cargados
         self.nodal_loads = [] # cargas nodales
         self.nodal_load_qzpos = [] # alturas de carga vertical
-
         self.loaded_elems = [] #tags
 
     def add_materials(self, materials): 
@@ -79,12 +78,12 @@ class StabilityModel():
         for elem_data in elements_data:
             etype, mat_id, nodei, nodej = elem_data
 
-            mat = self.materials[int(mat_id)]
-            seci = self.sections[int(nodei)]
-            secj = self.sections[int(nodej)]
+            mat   = self.materials[int(mat_id)]
+            seci  = self.sections[int(nodei)]
+            secj  = self.sections[int(nodej)]
             conec = [int(nodei), int(nodej)]
             
-            coord = self.coord[conec]
+            coord   = self.coord[conec]
             vrx_dof = self.avrx_dof[conec].flatten()
             ltr_dof = self.altr_dof[conec].flatten()
 
