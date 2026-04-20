@@ -58,11 +58,11 @@ class StabilityModel():
         for elem_data in elements_data:
             etype, mat_id, nodei, nodej = elem_data
 
-            mat = self.materials[int(mat_id)]
-            sec = self.sections[int(nodei)]
+            mat   = self.materials[int(mat_id)]
+            sec   = self.sections[int(nodei)]
             conec = [int(nodei), int(nodej)]
             
-            coord = self.coord[conec]
+            coord   = self.coord[conec]
             vrx_dof = self.avrx_dof[conec].flatten()
             ltr_dof = self.altr_dof[conec].flatten()
 
@@ -74,24 +74,52 @@ class StabilityModel():
         self.nelems = len(self.elems)
             
 
-    def add_tapered_elements(self, elements_data):
-        """ Funcion solo para añadir elementos barra"""
+    def add_tapered_elements(self, elements_data, align=0):
+        """
+        Añade elementos barra de seccion variable (tapered).
+
+        Parametros
+        ----------
+        elements_data : array-like
+            Cada fila: [etype, mat_id, nodei, nodej]
+        align : int
+            Tipo de alineacion de secciones a lo largo del eje de la barra.
+            Determina sobre que punto de la seccion transversal pasa el eje
+            de referencia x del elemento, lo que afecta al offset del centroide
+            y por ende al acoplamiento axial-flexion en K0_vrx, y a la
+            distribucion de N y M que alimenta la matriz geometrica Kg.
+
+            0 → eje x pasa por el centroide G(x) en cada seccion.
+                Sin acoplamiento axial-flexion. Caso mas simple; N = 0 bajo
+                cargas verticales sobre barra horizontal (equivalente al
+                comportamiento previo del codigo).
+            1 → eje x alineado con la fibra superior (ala superior horizontal).
+                Geometria tipica de correas y cabrios con taper hacia abajo.
+            2 → eje x alineado con la fibra inferior (ala inferior horizontal).
+                Geometria tipica de vigas con taper hacia arriba.
+
+            Para barras horizontales con cargas verticales, la diferencia
+            entre align=0, 1 y 2 es practicamente nula (N ~ 0 en todos los
+            casos). El efecto es significativo solo en barras inclinadas o
+            bajo carga axial combinada con flexion.
+        """
         for elem_data in elements_data:
             etype, mat_id, nodei, nodej = elem_data
 
-            mat = self.materials[int(mat_id)]
-            seci = self.sections[int(nodei)]
-            secj = self.sections[int(nodej)]
+            mat   = self.materials[int(mat_id)]
+            seci  = self.sections[int(nodei)]
+            secj  = self.sections[int(nodej)]
             conec = [int(nodei), int(nodej)]
             
-            coord = self.coord[conec]
+            coord   = self.coord[conec]
             vrx_dof = self.avrx_dof[conec].flatten()
             ltr_dof = self.altr_dof[conec].flatten()
 
             elem = ElementFactory.create_tapered(etype, mat, 
                                                  seci, secj,
                                                  coord, conec, 
-                                                 vrx_dof, ltr_dof)
+                                                 vrx_dof, ltr_dof,
+                                                 align=align)
             self.elems.append(elem)
         
         self.nelems = len(self.elems)

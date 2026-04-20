@@ -8,11 +8,13 @@ from src.gauss_quad import gauss_1d
 
 
 class LTBeamTap(Beam):
-    def __init__(self, mater, section_i, section_j, coord, conec, verax_dof, lator_dof):
+    def __init__(self, mater, section_i, section_j, coord, conec, 
+                 verax_dof, lator_dof, align=0):
         super().__init__(mater, coord, conec, verax_dof, lator_dof)
 
         self.section_i = section_i
         self.section_j = section_j
+        self.align     = align
 
         self.init_geometry()
 
@@ -37,56 +39,73 @@ class LTBeamTap(Beam):
     def init_geometry(self):
         vector = self.coord[1] - self.coord[0]
         self.length = sp.linalg.norm(vector)
+      
+        #h1_i = abs(self.section_i.zf1 - self.section_i.zS)
+        #h2_i = abs(self.section_i.zf2 - self.section_i.zS)
+        #h1_j = abs(self.section_j.zf1 - self.section_j.zS)
+        #h2_j = abs(self.section_j.zf2 - self.section_j.zS)
+        h_i = self.section_i.h
+        h_j = self.section_j.h
 
-        # Derivadas de las alturas de las mesas respecto a zS para calcular I_ypsi       
-        h1_i = abs(self.section_i.zf1 - self.section_i.zS)
-        h2_i = abs(self.section_i.zf2 - self.section_i.zS)
-        
-        h1_j = abs(self.section_j.zf1 - self.section_j.zS)
-        h2_j = abs(self.section_j.zf2 - self.section_j.zS)
-        
-        self.dh1 = (h1_j - h1_i) / self.length
-        self.dh2 = (h2_j - h2_i) / self.length
+        # falta implementar +0.5 delta shear center 
+        self.dh1 = (h_j - h_i) / self.length / 2
+        self.dh2 = (h_j - h_i) / self.length / 2
+
+        if self.align == 1: # eje x en la fibra superior
+            self.dh1 = 0.0
+            self.dh2 = (h_j - h_i) / self.length
+            
+        elif self.align == 2: # eje x en la fibra inferior
+            self.dh1 = (h_j - h_i) / self.length
+            self.dh2 = 0.0
         
     
 
     def interpolate_at_gauss(self, xi):
-        """
-        Interpola sección en punto de Gauss y añade inercias del taper.
-        """
-        L = self.length
-        #delta = 1e-6
-        dx = 1e-3 # 1 mm
+        """Interpola sección en punto de Gauss y añade inercias del taper."""
+        L     = self.length
+        dx    = 1e-3        # 1 mm — paso para diferenciacion numerica
         delta = dx / L
         
-        # Interpolar sección principal
-        gsec = interpolate_section(self.section_i, self.section_j, xi)
-        
-        # Secciones para diferenciación numérica
-        sec_plus = interpolate_section(self.section_i, self.section_j, xi + delta)
+        gsec      = interpolate_section(self.section_i, self.section_j, xi)
+        sec_plus  = interpolate_section(self.section_i, self.section_j, xi + delta)
         sec_minus = interpolate_section(self.section_i, self.section_j, xi - delta)
         
-        #h1 = gsec.zf1 - gsec.zS
-        #h2 = gsec.zf2 - gsec.zS
-        
-        # Calcular inercias del taper
-        #I_psi = 4 * (self.dh1**2 * gsec.Izf1 + self.dh2**2 * gsec.Izf2)
-        #I_wpsi = 2 * (h1 * self.dh1 * gsec.Izf1 + h2 * self.dh2 * gsec.Izf2)
-
-        I_psi = 2 * (sec_plus.Iw - 2*gsec.Iw + sec_minus.Iw) / (delta * L)**2
+        # Inercias de taper (Andrade 2005 / Beyer 2015 Apendice A)
+        I_psi  = 2 * (sec_plus.Iw - 2*gsec.Iw + sec_minus.Iw) / (delta * L)**2
         I_wpsi = (sec_plus.Iw - sec_minus.Iw) / (2 * delta * L)
         I_ypsi = 2 * (self.dh1 * gsec.Izf1 - self.dh2 * gsec.Izf2) # Aproximacion
         
-        # Actualizar sección con inercias del taper
         gsec.update_tapered_inertias(I_psi, I_wpsi, I_ypsi)
-        
         return gsec
+    
+    '''
+    def get_centroid_offset(self, section):
+        """
+        e(xi) = distancia del centroide G al eje de referencia x.
+
+        Convenio: positivo cuando G esta por encima del eje x
+        (coordenada z del centroide en el sistema del eje de referencia).
+
+        ALIGN 0 — eje x pasa por el centroide  → e = 0  (sin acoplamiento)
+        ALIGN 1 — eje x en la fibra superior   → e = zG - h  (negativo)
+        ALIGN 2 — eje x en la fibra inferior   → e = zG      (positivo)
+        """
+        if self.align == 0:
+            return 0.0
+        if self.align == 1:
+            return section.zG - section.h   # centroide esta (h - zG) por debajo del ala sup.
+        if self.align == 2:
+            return section.zG           # centroide esta a zG sobre la fibra inf.
+        
+        return 0.0
+    '''
      
 
     def compute_interpolation_vectors(self, xi):
         """ Vectores para ensamblar term-wise la parte de Kg_ltr"""
-        L = self.length
-        N = N_hermite(xi)
+        L  = self.length
+        N  = N_hermite(xi)
         dN = dN_hermite(xi)
 
        # Vector v' (derivada de la flexión lateral)
@@ -109,7 +128,7 @@ class LTBeamTap(Beam):
     
     def compute_verax_B(self, xi):
         """ Matriz deformacion-desplazamiento axial flexion vertical (2x6)"""
-        L = self.length
+        L   = self.length
         ddN = ddN_hermite(xi)
         
         B = np.zeros((2,6))
@@ -127,8 +146,8 @@ class LTBeamTap(Beam):
     
     def compute_lator_B(self, xi):
         """ Matriz deformacion-desplazamiento torsion flexion lateral (3x8)"""
-        L = self.length
-        dN = dN_hermite(xi)
+        L   = self.length
+        dN  = dN_hermite(xi)
         ddN = ddN_hermite(xi)
          # corregir indices
         B = np.zeros((3,8))
@@ -256,7 +275,7 @@ class LTBeamTap(Beam):
     
 
     def add_loads(self, qzpos, qxi, qzi, qxj, qzj):
-        # Añadir en coordenadas locales
+        """ Añade cargas en coordenadas locales """
         # qxi = intensidad en el nodo i en direccion de la barra
         # qxj = intensidad en el nodo j en direccion de la barra
         # qzi = intensidad en el nodo i en direccion perpendicular de la barra
@@ -277,17 +296,17 @@ class LTBeamTap(Beam):
 
 
     def calculate_forces(self, glob_disps):
-        # A Coordenadas locales=globales
+        """ Calcula fuerzas internas """
         self.disps = glob_disps # ya son locales
         self.forces = self.K0_vrx @ glob_disps - self.loads
-        self.disps[np.abs(self.disps) < 1e-12] = 0
-        self.forces[np.abs(self.forces) < 1e-9] = 0
+        self.disps[ np.abs(self.disps)  < 1e-12] = 0
+        self.forces[np.abs(self.forces) < 1e-9 ] = 0
 
 
     #"""
     def get_fields(self):
         L  = self.length
-        x = np.linspace(0,L,3)
+        x  = np.linspace(0,L,3)
         xi = x/L
 
         qxi, qzi, qxj, qzj = self.load_intensities
