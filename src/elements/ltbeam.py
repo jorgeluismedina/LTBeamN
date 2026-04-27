@@ -351,49 +351,5 @@ class LTBeam(Beam):
         w[np.abs(w) < 1e-12] = 0
 
         return x, N_diag, V_diag, M_diag, u, w
-    
-    '''
-    def get_fields(self):
-        EA = self.mater.E * self.section.A
-        EI = self.mater.E * self.section.Iy
-        L  = self.length
-
-        x  = np.linspace(0,L,2)
-        x2 = x**2
-        x3 = x2*x
-        x4 = x3*x
-        x5 = x4*x
-
-        q1i, q2i, q1j, q2j = self.load_intensities
-        sl1 = (q1j - q1i) / L
-        sl2 = (q2j - q2i) / L
-
-        # self.forces son fuerzas del nodo
-        # deben cambiar de signo para pasar a la fuerza de elemento
-        Ni = -self.forces[0] 
-        Vi =  self.forces[1] # para que salga como en Ftool no cambia
-        Mi = -self.forces[2]
-
-        ui  = self.disps[0]
-        wi  = self.disps[1]
-        thi = self.disps[2]
-
-        N = -sl1/2*x2 - q1i*x + Ni
-        u = (-sl1/6*x3 - q1i*x2 + Ni*x) / EA + ui
-
-        V =  sl2/2*x2 + q2i*x + Vi
-        M =  (sl2/6*x3 + q2i/2*x2 + Vi*x + Mi)
-        w =  (sl2/120*x5 + q2i/24*x4 + Vi*x3/6 + Mi*x2/2) / EI + thi*x + wi
-
-        # Limpieza de valores muy pequeños
-        N[np.abs(N) < 1e-9] = 0
-        V[np.abs(V) < 1e-9] = 0
-        M[np.abs(M) < 1e-9] = 0
-
-        u[np.abs(u) < 1e-12] = 0
-        w[np.abs(w) < 1e-12] = 0
-
-        return x, N, V, M, u, w
-    '''
 
     

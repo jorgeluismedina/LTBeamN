@@ -45,7 +45,6 @@ class StabilitySolver():
 
             pos = int(self.model.fz_loads_pos[i])   # código de altura
             sec = self.model.sections[node]
-            #ez  = sec.get_load_height(pos)
             ez  = sec.z_from_ref(1, pos)
             
             Kg_ltr[dof_t, dof_t] += ez * Fz 

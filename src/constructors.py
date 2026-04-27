@@ -37,10 +37,7 @@ class ElementFactory:
                        verax_dof, lator_dof,
                        align=0):
         
-        """
-        Crea instancia de elemento tapered.
-
-        """
+        """ Crea instancia de elemento tapered. """
         if etype not in cls.registry:
             raise ValueError(f"Tipo de elemento no registrado: {etype}")
         
