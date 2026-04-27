@@ -61,7 +61,7 @@ lator_restraints = np.array([
 # Carga distribuida uniforme unitaria
 elem_loads = []
 for e in range(nelems):
-    elem_loads.append([e, 0,   0.0, -1000.0, 0.0, -1000.0])#,   0, 0]) # id_elem, q1i, q2i, q1j, q2j
+    elem_loads.append([e, 0, 1,   0.0, -1000.0, 0.0, -1000.0])
 elem_loads = np.array(elem_loads)
 
 

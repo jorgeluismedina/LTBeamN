@@ -2,9 +2,10 @@
 import numpy as np
 import scipy as sp
 from src.elements.base_beam import Beam
-from src.sections.utils import interpolate_section
+from src.sections.section_utils import interpolate_section
 from src.shape_funcs import N_hermite, dN_hermite, ddN_hermite
 from src.gauss_quad import gauss_1d
+
 
 
 class LTBeamTap(Beam):
@@ -31,8 +32,8 @@ class LTBeamTap(Beam):
         self.load_intensities = np.zeros(4)
 
         # Posiciones de cargas distribuidas
-        self.qzpos = 0
         self.qxpos = 0
+        self.qzpos = 0
 
         
 
@@ -40,24 +41,12 @@ class LTBeamTap(Beam):
         vector = self.coord[1] - self.coord[0]
         self.length = sp.linalg.norm(vector)
       
-        #h1_i = abs(self.section_i.zf1 - self.section_i.zS)
-        #h2_i = abs(self.section_i.zf2 - self.section_i.zS)
-        #h1_j = abs(self.section_j.zf1 - self.section_j.zS)
-        #h2_j = abs(self.section_j.zf2 - self.section_j.zS)
-        h_i = self.section_i.h
-        h_j = self.section_j.h
-
-        # falta implementar +0.5 delta shear center 
-        self.dh1 = (h_j - h_i) / self.length / 2
-        self.dh2 = (h_j - h_i) / self.length / 2
-
-        if self.align == 1: # eje x en la fibra superior
-            self.dh1 = 0.0
-            self.dh2 = (h_j - h_i) / self.length
-            
-        elif self.align == 2: # eje x en la fibra inferior
-            self.dh1 = (h_j - h_i) / self.length
-            self.dh2 = 0.0
+        h1_i = abs(self.section_i.zf1 - self.section_i.zS)
+        h2_i = abs(self.section_i.zf2 - self.section_i.zS)
+        h1_j = abs(self.section_j.zf1 - self.section_j.zS)
+        h2_j = abs(self.section_j.zf2 - self.section_j.zS)
+        self.dh1 = (h1_j - h1_i) / self.length
+        self.dh2 = (h2_j - h2_i) / self.length
         
     
 
@@ -78,29 +67,7 @@ class LTBeamTap(Beam):
         
         gsec.update_tapered_inertias(I_psi, I_wpsi, I_ypsi)
         return gsec
-    
-    '''
-    def get_centroid_offset(self, section):
-        """
-        e(xi) = distancia del centroide G al eje de referencia x.
-
-        Convenio: positivo cuando G esta por encima del eje x
-        (coordenada z del centroide en el sistema del eje de referencia).
-
-        ALIGN 0 — eje x pasa por el centroide  → e = 0  (sin acoplamiento)
-        ALIGN 1 — eje x en la fibra superior   → e = zG - h  (negativo)
-        ALIGN 2 — eje x en la fibra inferior   → e = zG      (positivo)
-        """
-        if self.align == 0:
-            return 0.0
-        if self.align == 1:
-            return section.zG - section.h   # centroide esta (h - zG) por debajo del ala sup.
-        if self.align == 2:
-            return section.zG           # centroide esta a zG sobre la fibra inf.
         
-        return 0.0
-    '''
-     
 
     def compute_interpolation_vectors(self, xi):
         """ Vectores para ensamblar term-wise la parte de Kg_ltr"""
@@ -108,7 +75,7 @@ class LTBeamTap(Beam):
         N  = N_hermite(xi)
         dN = dN_hermite(xi)
 
-       # Vector v' (derivada de la flexión lateral)
+        # Vector v' (derivada de la flexión lateral)
         vec_dv = np.zeros(8)
         vec_dv[0::4] = dN[0::2] / L  
         vec_dv[1::4] = dN[1::2]
@@ -163,22 +130,27 @@ class LTBeamTap(Beam):
 
         return B 
     
-    def compute_verax_D(self, gauss_section):
-        """ Matriz constitutiva axial flexion vertical (2x2)"""
-        EA  = self.mater.E * gauss_section.A
-        EIy = self.mater.E * gauss_section.Iy
-        return np.diag([EA, EIy])
-    
-    
-    def compute_lator_D(self, gauss_section):
-        """ Matriz constitutiva torsion flexion lateral (3x3)"""
-        EIz = self.mater.E * gauss_section.Iz
-        EIw = self.mater.E * gauss_section.Iw
-        GIt = self.mater.G * gauss_section.It
+    def compute_verax_D(self, section):
+        """ Matriz constitutiva axial-flexión vertical con acoplamiento por excentricidad (2x2)"""
+        e   = section.z_from_ref(self.align, 0) # offset del centroide respecto al eje de referencia
+        EA  = self.mater.E * section.A
+        EIy = self.mater.E * section.Iy
 
-        EI_psi  = self.mater.E * gauss_section.I_psi
-        EI_wpsi = self.mater.E * gauss_section.I_wpsi
-        EI_ypsi = self.mater.E * gauss_section.I_ypsi
+        return np.array([
+            [ EA,          -EA * e        ],
+            [-EA * e,       EIy + EA * e**2]
+        ])
+    
+    
+    def compute_lator_D(self, section):
+        """ Matriz constitutiva torsion flexion lateral (3x3)"""
+        EIz = self.mater.E * section.Iz
+        EIw = self.mater.E * section.Iw
+        GIt = self.mater.G * section.It
+
+        EI_psi  = self.mater.E * section.I_psi
+        EI_wpsi = self.mater.E * section.I_wpsi
+        EI_ypsi = self.mater.E * section.I_ypsi
 
         return np.array([
             [EIz,      0,        EI_ypsi],
@@ -242,7 +214,7 @@ class LTBeamTap(Beam):
             zS      = section.zS
             i02     = section.i0**2
             beta_z  = section.beta_z
-            qzez    = section.get_load_height(self.qzpos)
+            qzez    = section.z_from_ref(1, self.qzpos)
 
             # Vectores de interpolación para ensamblar término a término
             vec_dv, vec_t, vec_dt = self.compute_interpolation_vectors(xi)
@@ -274,7 +246,7 @@ class LTBeamTap(Beam):
 
     
 
-    def add_loads(self, qzpos, qxi, qzi, qxj, qzj):
+    def add_loads(self, qxpos, qzpos, qxi, qzi, qxj, qzj):
         """ Añade cargas en coordenadas locales """
         # qxi = intensidad en el nodo i en direccion de la barra
         # qxj = intensidad en el nodo j en direccion de la barra
@@ -284,9 +256,11 @@ class LTBeamTap(Beam):
         # qzpos = posicion (altura) de aplicacion de la carga vertical
 
         self.load_intensities = [qxi, qzi, qxj, qzj]
+        self.qxpos = int(qxpos)
         self.qzpos = int(qzpos)
         
         L = self.length
+
         self.loads[0] =  (qxi/3 + qxj/6) * L
         self.loads[1] =  (7*qzi + 3*qzj) * L / 20
         self.loads[2] =  (3*qzi + 2*qzj) * L**2 / 60
@@ -294,50 +268,83 @@ class LTBeamTap(Beam):
         self.loads[4] =  (3*qzi + 7*qzj) * L / 20
         self.loads[5] = -(2*qzi + 3*qzj) * L**2 / 60
 
+        # Corrección por excentricidad de carga axial distribuida
+        ezi = -self.section_i.z_from_ref(self.align, int(qxpos))
+        ezj = -self.section_j.z_from_ref(self.align, int(qxpos))
+        mi = qxi * ezi
+        mj = qxj * ezj
+ 
+        self.loads[1] += -0.5  * (mi + mj)        
+        self.loads[2] +=  L/12 * (mi - mj)        
+        self.loads[4] +=  0.5  * (mi + mj)        
+        self.loads[5] +=  L/12 * (mj - mi)        
+
 
     def calculate_forces(self, glob_disps):
-        """ Calcula fuerzas internas """
+        """ Calcula fuerzas internas en el eje de referencia y respecto al centroide """
         self.disps = glob_disps # ya son locales
         self.forces = self.K0_vrx @ glob_disps - self.loads
+
+        # Momentos corregidos respecto al centroide G
+        ei = self.section_i.z_from_ref(self.align, 0)
+        ej = self.section_j.z_from_ref(self.align, 0)
+        self.forcesG = self.forces.copy()
+        self.forcesG[2] += self.forces[0] * ei
+        self.forcesG[5] += self.forces[3] * ej
+ 
         self.disps[ np.abs(self.disps)  < 1e-12] = 0
         self.forces[np.abs(self.forces) < 1e-9 ] = 0
+        self.forcesG[np.abs(self.forcesG) < 1e-9 ] = 0
 
 
-    #"""
     def get_fields(self):
         L  = self.length
-        x  = np.linspace(0,L,3)
+        x  = np.linspace(0,L,2) # 3 puntos nomas
         xi = x/L
 
-        qxi, qzi, qxj, qzj = self.load_intensities
-        slx = (qxj - qxi) / L
-        slz = (qzj - qzi) / L
+        # Obtener funciones de forma y sus derivadas
+        Nh  = N_hermite(xi)      # (4, n_points)
+        dNh = dN_hermite(xi)    # (4, n_points)
 
-        # self.forces son fuerzas del nodo
-        # deben cambiar de signo para pasar a la fuerza de elemento
-        Ni = -self.forces[0] 
-        Vi =  self.forces[1] # para que salga como en Ftool no cambia
-        Mi = -self.forces[2]
+        # Fuerzas internas del elemento
+        Ni = -self.forcesG[0] 
+        Vi =  self.forcesG[1]
+        Mi = -self.forcesG[2]
+        Nj =  self.forcesG[3]
+        Vj = -self.forcesG[4]
+        Mj =  self.forcesG[5]
 
-        N_diag = -slx/2*x**2 - qxi*x + Ni
-        V_diag =  slz/2*x**2 + qzi*x + Vi
-        M_diag =  slz/6*x**3 + qzi/2*x**2 + Vi*x + Mi
+        # Diagrama de axil (lineal)
+        N_diag = (1 - xi) * Ni + xi * Nj
+
+        # Diagrama de momento (interpolacion cubica)
+        # M(xi) = N1*Mi + N2*(L*Vi) + N3*Mj + N4*(L*Vj)
+        M_diag = (Nh[0] * Mi +
+                  Nh[1] * L * Vi +
+                  Nh[2] * Mj +
+                  Nh[3] * L * Vj)
+        
+        # Diagrama de cortante (derivada del momento)
+        # V = dM/dx = (1/L) * dM/dxi
+        V_diag = (dNh[0] * Mi / L +
+                  dNh[1] * Vi +
+                  dNh[2] * Mj / L +
+                  dNh[3] * Vj)
 
         # Desplazamiento Axial: Interpolacion lineal
         u = (1 - xi) * self.disps[0] + xi * self.disps[3]
 
         # Desplazamiento Vertical: Interpolacion cubica
-        Nh = N_hermite(xi)
-        w =  (Nh[0]*self.disps[1] + Nh[1]*L*self.disps[2] + 
-              Nh[2]*self.disps[4] + Nh[3]*L*self.disps[5])
+        w =  (Nh[0]*self.disps[1] + 
+              Nh[1]*L*self.disps[2] + 
+              Nh[2]*self.disps[4] + 
+              Nh[3]*L*self.disps[5])
 
         # Limpieza de valores muy pequeños
         N_diag[np.abs(N_diag) < 1e-9] = 0
         V_diag[np.abs(V_diag) < 1e-9] = 0
         M_diag[np.abs(M_diag) < 1e-9] = 0
-
         u[np.abs(u) < 1e-12] = 0
         w[np.abs(w) < 1e-12] = 0
 
         return x, N_diag, V_diag, M_diag, u, w
-    #"""

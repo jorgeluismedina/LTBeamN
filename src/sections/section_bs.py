@@ -63,16 +63,25 @@ class ISection_BS:
 
     def compute_polar_radius(self): #respecto al centro de corte
         self.i0 = np.sqrt((self.Iy + self.Iz) / self.A)
-
-    def get_load_height(self, pos):
+    
+    def z_from_ref(self, ref, pos):
         """
+        Calcula la altura de un punto `pos` respecto a un eje de referencia `ref`
         pos_code:
-            0 → centro de corte  (ez = 0,      sección bisimétrica: SC = centroide)
-            1 → centroide        (ez = -zS = 0)
-            2 → ala inferior     (ez = -h/2)
-            3 → ala superior     (ez = +h/2)
+            0 → centroide
+            1 → centro de corte
+            2 → mesa inferior
+            3 → mesa superior
         """
-        return [0.0, -self.zS, -(self.zG + self.zS), self.h - (self.zG + self.zS)][pos]
+
+        heights = np.array([
+            0.0, 
+            self.zS,
+            -self.zG,
+            self.h - self.zG
+        ]) # referenciado todo al centroide
+
+        return heights[pos] - heights[ref]
 
     def summary(self):
         print("\n" + "="*50)

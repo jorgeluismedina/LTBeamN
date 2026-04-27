@@ -22,7 +22,7 @@ class StabilitySolver():
 
             pos = self.model.spring_pos[i]
             sec = self.model.sections[node]
-            ez  = -sec.get_load_height(pos)
+            ez  = -sec.z_from_ref(1, pos) # estudiar mejor el cambio de signo
 
             K0_ltr[dof_v, dof_v] += kv
             K0_ltr[dof_v, dof_t] += kv * ez
@@ -41,13 +41,14 @@ class StabilitySolver():
 
         for i, node in enumerate(self.model.loaded_nodes):
             dof_t = self.model.altr_dof[node, 2]      # DOF θ del nodo
-            Pz    = self.model.nodal_loads[i, 1]      # carga vertical
+            Fz    = self.model.nodal_loads[i, 1]      # carga vertical
 
-            pos = int(self.model.nodal_load_pos[i])   # código de altura
+            pos = int(self.model.fz_loads_pos[i])   # código de altura
             sec = self.model.sections[node]
-            ez  = sec.get_load_height(pos)
+            #ez  = sec.get_load_height(pos)
+            ez  = sec.z_from_ref(1, pos)
             
-            Kg_ltr[dof_t, dof_t] += ez * Pz 
+            Kg_ltr[dof_t, dof_t] += ez * Fz 
          
         return Kg_ltr
     

@@ -64,8 +64,8 @@ lator_restraints = np.array([
 
 # ----- CARGAS NODALES --------
 nodal_loads = np.array([
-    [  nelems/4, 0,   0.0, -10000.0, 0.0],
-    [3*nelems/4, 0,   0.0, -10000.0, 0.0]
+    [  nelems/4, 0, 1,   0.0, -10000.0, 0.0],
+    [3*nelems/4, 0, 1,   0.0, -10000.0, 0.0]
 ])
 
 

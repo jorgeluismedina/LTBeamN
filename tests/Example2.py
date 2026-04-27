@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
 from src.sections.section_ms import ISection_MS
-from src.sections.utils import interpolate_multiple_sections
+from src.sections.section_utils import interpolate_multiple_sections
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
@@ -63,11 +63,11 @@ lator_restraints = np.array([
 
 # ----- CARGAS NODALES --------
 # Carga puntual en la punta sobre la mesa superior
-idx = 2
+idx = 3
 ratios = [0, 1, 2, 4]
 r = ratios[idx]
 nodal_loads = np.array([
-    [nelems, 3,   r*-50000.0, -50000.0, 0.0]
+    [nelems, 0, 3,   r*-50000.0, -50000.0, 0.0]
 ])
 
 
@@ -95,7 +95,7 @@ solver2.solve()
 mu_cr = solver2.mu_crs[0]
 
 # Resultados y comparacion
-mu_cr_ref = [1.979, 1.742, 1.475, 1.006]
+mu_cr_ref     = [1.979, 1.742, 1.475, 1.006]
 mu_cr_ltbeamn = [1.943, 1.722, 1.469, 1.010]
 
 
