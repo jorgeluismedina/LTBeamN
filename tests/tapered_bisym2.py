@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
 from src.sections.section_ms import ISection_MS
-from src.sections.utils import interpolate_multiple_sections
+from src.sections.section_utils import interpolate_multiple_sections
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
@@ -32,7 +32,7 @@ section2 = ISection_MS(h=0.2, bf1=0.15, bf2=0.15,
 
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 5 #[m]
-nelems = 30 
+nelems = 20 
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -67,7 +67,7 @@ lator_restraints = np.array([
 # Carga distribuida uniforme unitaria
 elem_loads = []
 for e in range(nelems):
-    elem_loads.append([e, 0,   0.0, -1000.0, 0.0, -1000.0])
+    elem_loads.append([e, 0, 1,   0.0, -1000.0, 0.0, -1000.0])
 elem_loads = np.array(elem_loads)
 
 

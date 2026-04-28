@@ -2,12 +2,16 @@
 import numpy as np
 import scipy as sp
 from src.elements.base_beam import Beam
+from src.shape_funcs import N_hermite, dN_hermite
+
 
 class LTBeam(Beam):
     def __init__(self, mater, section, coord, conec, verax_dof, lator_dof):
         super().__init__(mater,coord, conec, verax_dof, lator_dof)
 
         self.section = section
+        self.align   = 0
+
         self.init_geometry()
         self.set_dof_indices()
 
@@ -22,9 +26,10 @@ class LTBeam(Beam):
         self.disps  = np.zeros(6)
         self.load_intensities = np.zeros(4)
 
-        # Alturas de posicion de cargas distribuidas
-        self.qzez = 0.0
-        self.qxez = 0.0
+        # Posiciones de cargas distribuidas
+        self.qzpos = 0
+        self.qxpos = 0
+
 
         
   
@@ -209,7 +214,7 @@ class LTBeam(Beam):
         My_base = (M1 * self.dNidNj_1_xi_matrix() + 
                    M2 * self.dNidNj_xi_matrix()) # Integral de My * Ni' * Nj'
         
-        Vz_base  = Vz * self.dNiNj_matrix() # Integral de Vz * Ni' * Nj (asimetrica)
+        Vz_base = Vz * self.dNiNj_matrix() # Integral de Vz * Ni' * Nj (asimetrica)
 
         # Ensamblaje de matriz geometrica por momento y cortante
         KgMV = np.zeros((8, 8))
@@ -229,15 +234,17 @@ class LTBeam(Beam):
     
     def compute_lator_KgQ(self):
         """ Matriz geométrica por altura de carga transversal distribuida (8x8) """
-        qzi = self.load_intensities[1]
-        qzj = self.load_intensities[3]
+        qzi  = self.load_intensities[1]
+        qzj  = self.load_intensities[3]
+        #qzez = self.section.get_load_height(self.qzpos)
+        qzez = self.section.z_from_ref(1, self.qzpos)
          
         # qz(xi) = qzi*(1-xi) + qzj*xi
         Q_base = (qzi * self.NiNj_1_xi_matrix() + 
                   qzj * self.NiNj_xi_matrix())
 
-        KgQ = np.zeros((8, 8))
-        KgQ[self.idx_tt] += self.qzez * Q_base # Bloque t-t (torsion)
+        KgQ = np.zeros((8, 8))       
+        KgQ[self.idx_tt] += qzez * Q_base # Bloque t-t (torsion)
 
         return KgQ
 
@@ -251,24 +258,37 @@ class LTBeam(Beam):
     
     
 
-    def add_loads(self, qzpos, qxi, qzi, qxj, qzj):
-        # Añadir en coordenadas locales
+    def add_loads(self, qxpos, qzpos, qxi, qzi, qxj, qzj):
+        """ Añade cargas en coordenadas locales """
         # qxi = intensidad en el nodo i en direccion de la barra
         # qxj = intensidad en el nodo j en direccion de la barra
         # qzi = intensidad en el nodo i en direccion perpendicular de la barra
         # qzj = intensidad en el nodo j en direccion perpendicular de la barra
         # qxpos = posicion (altura) de aplicacion de la carga axial
         # qzpos = posicion (altura) de aplicacion de la carga vertical
-        self.qzez = self.section.get_load_height(int(qzpos))
+
         self.load_intensities = [qxi, qzi, qxj, qzj]
+        self.qxpos = int(qxpos)
+        self.qzpos = int(qzpos)
         
         L = self.length
+
         self.loads[0] =  (qxi/3 + qxj/6) * L
         self.loads[1] =  (7*qzi + 3*qzj) * L / 20
         self.loads[2] =  (3*qzi + 2*qzj) * L**2 / 60
         self.loads[3] =  (qxj/3 + qxi/6) * L
         self.loads[4] =  (3*qzi + 7*qzj) * L / 20
         self.loads[5] = -(2*qzi + 3*qzj) * L**2 / 60
+
+        # Corrección por excentricidad de carga axial distribuida
+        ez = -self.section.z_from_ref(0, int(qxpos)) # para seguir la convencion de momentos, ez es negativo
+        mi = qxi * ez
+        mj = qxj * ez
+
+        self.loads[1] += -0.5  * (mi + mj)        
+        self.loads[2] +=  L/12 * (mi - mj)        
+        self.loads[4] +=  0.5  * (mi + mj)        
+        self.loads[5] +=  L/12 * (mj - mi)
 
 
     def calculate_forces(self, glob_disps):
@@ -279,47 +299,57 @@ class LTBeam(Beam):
         self.forces[np.abs(self.forces) < 1e-9] = 0
 
 
+    
     def get_fields(self):
-        EA = self.mater.E * self.section.A
-        EI = self.mater.E * self.section.Iy
         L  = self.length
+        x  = np.linspace(0,L,2) # 3 puntos nomas
+        xi = x/L
 
-        x = np.linspace(0,L,2)
-        x2 = x**2
-        x3 = x2*x
-        x4 = x3*x
-        x5 = x4*x
+        # Obtener funciones de forma y sus derivadas
+        Nh  = N_hermite(xi)      # (4, n_points)
+        dNh = dN_hermite(xi)    # (4, n_points)
 
-        q1i, q2i, q1j, q2j = self.load_intensities
-        sl1 = (q1j - q1i) / L
-        sl2 = (q2j - q2i) / L
-
-        # self.forces son fuerzas del nodo
-        # deben cambiar de signo para pasar a la fuerza de elemento
+        # Fuerzas internas del elemento
         Ni = -self.forces[0] 
-        Vi =  self.forces[1] # para que salga como en Ftool no cambia
+        Vi =  self.forces[1]
         Mi = -self.forces[2]
+        Nj =  self.forces[3]
+        Vj = -self.forces[4]
+        Mj =  self.forces[5]
 
-        ui  = self.disps[0]
-        wi  = self.disps[1]
-        thi = self.disps[2]
+        # Diagrama de axil (lineal)
+        N_diag = (1 - xi) * Ni + xi * Nj
 
-        N = -sl1/2*x2 - q1i*x + Ni
-        u = (-sl1/6*x3 - q1i*x2 + Ni*x) / EA + ui
+        # Diagrama de momento (interpolacion cubica)
+        # M(xi) = N1*Mi + N2*(L*Vi) + N3*Mj + N4*(L*Vj)
+        M_diag = (Nh[0] * Mi +
+                  Nh[1] * L * Vi +
+                  Nh[2] * Mj +
+                  Nh[3] * L * Vj)
+        
+        # Diagrama de cortante (derivada del momento)
+        # V = dM/dx = (1/L) * dM/dxi
+        V_diag = (dNh[0] * Mi / L +
+                  dNh[1] * Vi +
+                  dNh[2] * Mj / L +
+                  dNh[3] * Vj)
 
-        V =  sl2/2*x2 + q2i*x + Vi
-        M =  (sl2/6*x3 + q2i/2*x2 + Vi*x + Mi)
-        w =  (sl2/120*x5 + q2i/24*x4 + Vi*x3/6 + Mi*x2/2) / EI + thi*x + wi
+        # Desplazamiento Axial: Interpolacion lineal
+        u = (1 - xi) * self.disps[0] + xi * self.disps[3]
+
+        # Desplazamiento Vertical: Interpolacion cubica
+        w =  (Nh[0]*self.disps[1] + 
+              Nh[1]*L*self.disps[2] + 
+              Nh[2]*self.disps[4] + 
+              Nh[3]*L*self.disps[5])
 
         # Limpieza de valores muy pequeños
-        N[np.abs(N) < 1e-9] = 0
-        V[np.abs(V) < 1e-9] = 0
-        M[np.abs(M) < 1e-9] = 0
-
+        N_diag[np.abs(N_diag) < 1e-9] = 0
+        V_diag[np.abs(V_diag) < 1e-9] = 0
+        M_diag[np.abs(M_diag) < 1e-9] = 0
         u[np.abs(u) < 1e-12] = 0
         w[np.abs(w) < 1e-12] = 0
 
-        return x, N, V, M, u, w
-    
+        return x, N_diag, V_diag, M_diag, u, w
 
     

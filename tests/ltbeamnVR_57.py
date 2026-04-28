@@ -29,7 +29,7 @@ sect1 = ISection_MS(h=0.3, bf1=0.20, bf2=0.15,
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 19.5 #[m]
 # numero de elementos pares para que exista un nodo en el centro
-nelems = 200 
+nelems = 100 
 # Con 150 elementos mu_cr = 9.2614, error con Ansys delta = 0.09%
 # Con 250 elementos mu_cr = 9.2783, error con Ansys delta = 0.27%
 # Con 400 elementos mu_cr = 9.3052, error con Ansys delta = 0.56%
@@ -67,7 +67,7 @@ lator_restraints = np.array([
 
 # ----- CARGAS NODALES --------
 nodal_loads = np.array([
-    [nelems/4, 0,    0.0, -10000.0, 0.0]
+    [nelems/4, 0, 1,    0.0, -10000.0, 0.0]
 ])
 
 

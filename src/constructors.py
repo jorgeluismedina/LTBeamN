@@ -16,8 +16,10 @@ class ElementFactory:
     
     @classmethod
     def create_uniform(cls, etype, material, section, 
-                       coord, conec, verax_dof, lator_dof):
-        """Crea instancia del elemento uniforme."""
+                       coord, conec, 
+                       verax_dof, lator_dof):
+        
+        """Crea instancia del elemento."""
         if etype not in cls.registry:
             raise ValueError(f"Element type not supported: {etype}")
         
@@ -30,16 +32,18 @@ class ElementFactory:
     def create_tapered(cls, etype, material,
                        section_i, section_j,
                        coord, conec,
-                       verax_dof, lator_dof):
+                       verax_dof, lator_dof,
+                       align=0):
         
-        """Crea instancia del elemento tapered."""
+        """ Crea instancia de elemento tapered. """
         if etype not in cls.registry:
             raise ValueError(f"Element type not supported: {etype}")
         
         return cls.registry[etype](material, 
                                    section_i, section_j, 
                                    coord, conec, 
-                                   verax_dof, lator_dof)
+                                   verax_dof, lator_dof,
+                                   align=align)
         
 
 

@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from src.material import Material
 from src.sections.section_ms import ISection_MS
-from src.sections.utils import interpolate_multiple_sections
+from src.sections.section_utils import interpolate_multiple_sections
 from src.gauss_quad import gauss_1d
 
 

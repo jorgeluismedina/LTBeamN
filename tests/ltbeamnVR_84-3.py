@@ -69,7 +69,7 @@ springs_data = np.array([
 # Cargas distribuida uniforme
 elem_loads = []
 for e in range(nelems):
-    elem_loads.append([e, 0,   0.0, -3000.0, 0.0, -3000.0])
+    elem_loads.append([e, 0, 1,   0.0, -3000.0, 0.0, -3000.0])
 
 elem_loads = np.array(elem_loads)
 
@@ -130,7 +130,6 @@ print("\n" + "="*55 + "\n")
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
 all_diagrams = solver1.prepare_diagrams()
-
 
 plot_diagram(model, all_diagrams[0], "Axial Force Diagram")
 plot_diagram(model, all_diagrams[1], "Shear Force Diagram")

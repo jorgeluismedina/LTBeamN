@@ -1,7 +1,6 @@
 
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
-from scipy.sparse.linalg import spsolve
 
 
 
@@ -31,6 +30,19 @@ class StaticSolver():
                 self.model.nodal_loads
             )
             F[dofs] = vals
+
+            for i, node in enumerate(self.model.loaded_nodes):
+                    Fx  = self.model.nodal_loads[i, 0]
+                    pos = self.model.fx_loads_pos[i]
+    
+                    if Fx == 0.0 or pos == 0:
+                        continue
+    
+                    sec    = self.model.sections[node]
+                    align  = self.model.node_align[node]
+                    ez     = sec.z_from_ref(align, pos)
+                    dof_Mx = self.model.avrx_dof[node, 2]
+                    F[dof_Mx] += Fx * ez
 
         if self.model.loaded_elems:
             for id_elem in self.model.loaded_elems:

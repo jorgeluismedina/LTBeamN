@@ -8,6 +8,7 @@ class StabilityModel():
         self.nvrx_dofn = 3 # numero de DOF por nodo (u, w, w,x) 
         self.nltr_dofn = 4 # numero de DOF por nodo (v, v,x, th, th,x)
         self.elems = [] # cambiar el atributo a elements?
+        #self.conectivities = []
 
         # estatico
         self.svrx_nodes = [] # tags de nodos con DOF de flex. vertical y desp. axial restringidos
@@ -26,7 +27,9 @@ class StabilityModel():
         # cargas estatico
         self.loaded_nodes = [] # tags de nodos cargados
         self.nodal_loads = [] # cargas nodales
-        self.nodal_load_qzpos = [] # alturas de carga vertical
+        self.fx_load_pos = [] # posicion de carga axial
+        self.fz_load_pos = [] # posicion de carga vertical
+
         self.loaded_elems = [] #tags
 
     def add_materials(self, materials): 
@@ -52,16 +55,28 @@ class StabilityModel():
         self.nltr_dofs = self.nltr_dofn * self.nnods # numero total de DOF problema estabilidad
         self.altr_dof = np.arange(self.nltr_dofs).reshape((self.nnods, self.nltr_dofn)) # DOF ordenados por nodo
 
+
+    def build_node_alignments(self):
+        """ Lista de alineacion de cada nodo, segun los elementos conectados. """
+        self.node_align = ['centroid'] * self.nnods
+        visited = np.zeros(self.nnods, dtype=bool)
+        for elem in self.elems:
+            for node in elem.conec:
+                if not visited[node]:
+                    self.node_align[node] = elem.align   # indexado por node id
+                    visited[node] = True
+
+
     def add_uniform_elements(self, elements_data):
-        """ Funcion solo para añadir elementos barra"""
+        """ Funcion solo para añadir elementos barra """
         for elem_data in elements_data:
             etype, mat_id, nodei, nodej = elem_data
 
-            mat = self.materials[int(mat_id)]
-            sec = self.sections[int(nodei)]
+            mat   = self.materials[int(mat_id)]
+            sec   = self.sections[int(nodei)]
             conec = [int(nodei), int(nodej)]
             
-            coord = self.coord[conec]
+            coord   = self.coord[conec]
             vrx_dof = self.avrx_dof[conec].flatten()
             ltr_dof = self.altr_dof[conec].flatten()
 
@@ -71,10 +86,22 @@ class StabilityModel():
             self.elems.append(elem)
         
         self.nelems = len(self.elems)
+        self.build_node_alignments()
             
 
-    def add_tapered_elements(self, elements_data):
-        """ Funcion solo para añadir elementos barra"""
+    def add_tapered_elements(self, elements_data, align=0):
+        """
+        Añade elementos de seccion variable.
+ 
+        Parametros
+        ----------
+        elements_data : array-like — cada fila: [etype, mat_id, nodei, nodej]
+        align : string
+            Alineacion del eje de referencia local:
+                0 → centroide G(x)    — sin acoplamiento axial-flexión (default)
+                3 → fibra superior    — taper hacia abajo
+                2 → fibra inferior    — taper hacia arriba
+        """
         for elem_data in elements_data:
             etype, mat_id, nodei, nodej = elem_data
 
@@ -90,10 +117,12 @@ class StabilityModel():
             elem = ElementFactory.create_tapered(etype, mat, 
                                                  seci, secj,
                                                  coord, conec, 
-                                                 vrx_dof, ltr_dof)
+                                                 vrx_dof, ltr_dof,
+                                                 align=align)
             self.elems.append(elem)
         
         self.nelems = len(self.elems)
+        self.build_node_alignments()
 
 
     def add_verax_restraints(self, verax_restraints_data):
@@ -110,13 +139,8 @@ class StabilityModel():
         Formato: [node, pos, kv, kt]
             kv  : rigidez traslacional lateral [F/L]  (v-DOF)
             kt  : rigidez torsional            [F·L]  (θ-DOF)
-            pos : posicion vertical en la seccion
-                0 → centro de corte
-                1 → centroide
-                2 → ala inferior
-                3 → ala superior
-            
-        Pasar 0 para omitir un tipo de muelle en un nodo.
+            pos : pos. vertical, 0→G, 1→SC, 2→ala inf, 3→ala sup
+
         """
         self.spring_nodes = list(springs_data[:, 0].astype(int))
         self.spring_pos   = springs_data[:, 1].astype(int)
@@ -125,40 +149,46 @@ class StabilityModel():
 
 
     def add_nodal_loads(self, nodal_loads_data):
-        """ 
-        Añade cargas verticales, axiales y de momento en coordenadas locales
-        Formato: [node, qx, qz, Mx, qzpos=0]
-            qzpos:
-                0 → centro de corte
-                1 → centroide
-                2 → ala inferior
-                3 → ala superior
         """
-        self.loaded_nodes   = list(nodal_loads_data[:,0].astype(int))
-        self.nodal_load_pos = nodal_loads_data[:,1].astype(int)
-        self.nodal_loads    = nodal_loads_data[:,2:].astype(float)
+        Cargas puntuales nodales en coordenadas locales.
+ 
+        Formato: [node, fzpos, fxpos, Fx, Fz, Mx]
+            fzpos : altura de Fz — 0→G, 1→SC, 2→ala inf, 3→ala sup
+                    (usado en el problema de estabilidad, StabilitySolver)
+            fxpos : altura de Fx — mismos códigos
+                    (la corrección ΔM = Fx·ez la aplica StaticSolver
+                    en assemble_verax_F, con la geometría del elemento conectado)
+            Fx, Fz, Mx : carga axial, vertical y momento nodal
+        """
+        self.loaded_nodes = list(nodal_loads_data[:,0].astype(int))
+        self.fx_loads_pos = nodal_loads_data[:,1].astype(int)
+        self.fz_loads_pos = nodal_loads_data[:,2].astype(int)
+        self.nodal_loads  = nodal_loads_data[:,3:].astype(float) # [Fx, Fz, Mx]
         
 
     def add_elem_loads(self, elem_loads_data):
-        """ 
-        Añade cargas verticales de elemento en coordenads locales
-        Formato: [id_elem, qxi, qzi, qxj, qzj, qzpos=0]
-             qzpos:
-                0 → centro de corte
-                1 → centroide
-                2 → ala inferior
-                3 → ala superior
         """
-        self.loaded_elems   = list(elem_loads_data[:,0].astype(int))
-        self.elem_loads_pos = elem_loads_data[:,1].astype(int)
-        self.elem_loads     = elem_loads_data[:,2:].astype(float)
+        Cargas distribuidas de elemento en coordenadas locales.
+ 
+        Formato: [id_elem, qzpos, qxpos, qxi, qzi, qxj, qzj]
+            qzpos : altura de qz — 0→G, 1→SC, 2→ala inf, 3→ala sup
+            qxpos : altura de qx — mismos códigos
+            qxi, qzi : intensidades en nodo i (axial, transversal)
+            qxj, qzj : intensidades en nodo j (axial, transversal)
+        """
+        self.loaded_elems = list(elem_loads_data[:,0].astype(int))
+        self.qx_load_pos  = elem_loads_data[:,1].astype(int)
+        self.qz_load_pos  = elem_loads_data[:,2].astype(int)
+        self.elem_loads   = elem_loads_data[:,3:].astype(float)
         
 
         for load_data in elem_loads_data:
             id_elem = int(load_data[0])
-            pos     = load_data[1].astype(int)
-            loads   = load_data[2:].astype(float)
-            self.elems[id_elem].add_loads(pos, *loads)
+            qxpos   = load_data[1].astype(int)
+            qzpos   = load_data[2].astype(int)
+            loads   = load_data[3:].astype(float)
+
+            self.elems[id_elem].add_loads(qxpos, qzpos, *loads)
 
 
 

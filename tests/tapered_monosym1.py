@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
 from src.sections.section_ms import ISection_MS
-from src.sections.utils import interpolate_multiple_sections
+from src.sections.section_utils import interpolate_multiple_sections
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
@@ -67,8 +67,8 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga de flexion pura unitaria
 nodal_loads = np.array([
-    [0,      0,   0.0, 0.0, -1000.0],
-    [nelems, 0,   0.0, 0.0,  1000.0]
+    [0,      0, 1,   0.0, 0.0, -1000.0],
+    [nelems, 0, 1,   0.0, 0.0,  1000.0]
 ])
 
 

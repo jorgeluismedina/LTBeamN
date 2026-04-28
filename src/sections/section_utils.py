@@ -28,3 +28,4 @@ def interpolate_section(section1, section2, xi):
 
 def interpolate_multiple_sections(section1, section2, points):
     return [interpolate_section(section1, section2, xi) for xi in points]
+
