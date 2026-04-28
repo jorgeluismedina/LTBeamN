@@ -65,8 +65,8 @@ lator_restraints = np.array([
 # sobre el centroide → pos=0
 # Q = 1 kN hacia abajo → mu_cr directo en kN
 nodal_loads = np.array([
-    [nelems,  3, 3,   -1000.0, -1000.0, 0.0]  
-    #[nelems,  3, 3,    0.0, -1000.0, 0.0]
+    #[nelems,  3, 3,   -1000.0, -1000.0, 0.0]  
+    [nelems,  3, 3,    0.0, -1000.0, 0.0]
 ])
 
 
