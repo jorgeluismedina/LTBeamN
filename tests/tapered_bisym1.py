@@ -32,7 +32,7 @@ section2 = ISection_MS(h=0.2, bf1=0.15, bf2=0.15,
 
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 5 #[m]
-nelems = 20 
+nelems = 10 
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
@@ -68,8 +68,8 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga de flexion pura unitaria
 nodal_loads = np.array([
-    [0,      0,    0.0, 0.0, -1000.0],
-    [nelems, 0,    0.0, 0.0,  1000.0]
+    [0,      0, 1,    0.0, 0.0, -1000.0],
+    [nelems, 0, 1,    0.0, 0.0,  1000.0]
 ])
 
 

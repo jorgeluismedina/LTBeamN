@@ -26,9 +26,10 @@ class LTBeamTap(Beam):
         self.Kg_ltr = np.zeros((8, 8))
 
         # Solo problema estatico
-        self.loads  = np.zeros(6)
-        self.forces = np.zeros(6)
-        self.disps  = np.zeros(6)
+        self.loads   = np.zeros(6)
+        self.forces  = np.zeros(6)
+        self.forcesG = np.zeros(6)
+        self.disps   = np.zeros(6)
         self.load_intensities = np.zeros(4)
 
         # Posiciones de cargas distribuidas
@@ -193,10 +194,10 @@ class LTBeamTap(Beam):
         Kg_ltr = np.zeros((8, 8))
         L = self.length
         
-        N1 = -self.forces[0] # Axial izquierda
-        N2 =  self.forces[3] # Axial derecha
-        M1 = -self.forces[2] # Momento izquierda
-        M2 =  self.forces[5]  # Momento derecha
+        N1 = -self.forcesG[0] # Axial izquierda
+        N2 =  self.forcesG[3] # Axial derecha
+        M1 = -self.forcesG[2] # Momento izquierda
+        M2 =  self.forcesG[5]  # Momento derecha
         V_z = (M1 - M2) / L  # Cortante
 
         qzi = self.load_intensities[1]
