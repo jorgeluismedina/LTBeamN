@@ -152,7 +152,7 @@ class StabilityModel():
         """
         Cargas puntuales nodales en coordenadas locales.
  
-        Formato: [node, fzpos, fxpos, Fx, Fz, Mx]
+        Formato: [node, fxpos, fzpos, Fx, Fz, Mx]
             fzpos : altura de Fz — 0→G, 1→SC, 2→ala inf, 3→ala sup
                     (usado en el problema de estabilidad, StabilitySolver)
             fxpos : altura de Fx — mismos códigos

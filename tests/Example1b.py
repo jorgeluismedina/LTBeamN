@@ -5,8 +5,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
-import scipy as sp
-
 import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
@@ -114,8 +112,8 @@ print(f"  Displacement max. w_max:         {maxw*1e3:>16.4f} mm")
 #'''
 print("\n STABILITY ANALYSIS")
 print(f"  Lenght (L):                             {L:>11.2f} m")
-print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
 print(f"  Critical load factor μ_cr (Reference):  {mu_cr_ref[idx]:>12.4f}")
+print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
 print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn[idx]:>12.4f}")
 print(f"  Result diff. with Reference:            {abs(mu_cr - mu_cr_ref[idx])/mu_cr_ref[idx]*100:>11.2f} %")
 print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn[idx])/mu_cr_ltbeamn[idx]*100:>11.2f} %")

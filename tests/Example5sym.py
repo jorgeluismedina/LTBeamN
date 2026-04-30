@@ -18,25 +18,29 @@ from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
 material1 = Material(E=2.10e11, nu=0.3, dens=1.0)
 materials = [material1]
 
-# Secciones
-section1 = ISection_MS(h=0.6127, bf1=0.15, bf2=0.15, 
-                       tw=0.0095, tf1=0.0127, tf2=0.0127, r1=0.00, r2=0.00) #[m]
+# ----- SECCIONES --------
+section_max = ISection_MS(h=0.60, bf1=0.15, bf2=0.15, 
+                          tw=0.0095, tf1=0.0127, tf2=0.0127, r1=0.00, r2=0.00) #[m]
 
-section2 = ISection_MS(h=0.6127*0.2, bf1=0.15, bf2=0.15, 
-                       tw=0.0095, tf1=0.0127, tf2=0.0127, r1=0.00, r2=0.00) #[m]
+section_min = ISection_MS(h=0.60*0.4, bf1=0.15, bf2=0.15, 
+                          tw=0.0095, tf1=0.0127, tf2=0.0127, r1=0.00, r2=0.00) #[m]
 
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
-L = 4 #[m]
-nelems = 20
+idx = 2
+Ls  = np.array([6, 9, 12]) / 2 #[m]
+L   = Ls[idx]
+
+nelems = int(10 * L)
+nnods  = nelems + 1
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
 norm_coords = coordinates / L
 
 # Generacion de secciones
-node_sections = interpolate_multiple_sections(section1, section2, norm_coords)
+node_sections = interpolate_multiple_sections(section_min, section_max, norm_coords)
 
 
 # Informacion de elementos
@@ -49,23 +53,21 @@ elements_data = np.array(elements_data)
 
 
 # ----- RESTRICCIONES --------
-# Empotramiento
 verax_restraints = np.array([
-    [0,       1, 1, 1],
+    [0,       1, 1, 0],
+    [nelems,  1, 0, 1]
 ])
-# Empotramiento
+
 lator_restraints = np.array([
-    [0,       1, 1, 1, 1],
+    [0,       1, 0, 1, 0],
+    [nelems,  0, 1, 0, 1]
 ])
 
 
 # ----- CARGAS NODALES --------
 # Carga puntual en la punta sobre la mesa superior
-idx = 1
-ratios = [0, 1, 2, 4]
-r = ratios[idx]
 nodal_loads = np.array([
-    [nelems, 0, 3,   r*-50000.0, -50000.0, 0.0]
+    [nelems, 0, 1,   0.0, -1000.0, 0.0]
 ])
 
 
@@ -74,7 +76,7 @@ model = StabilityModel()
 model.add_materials(materials)
 model.add_sections(node_sections)
 model.add_nodes(coordinates)
-model.add_tapered_elements(elements_data)
+model.add_tapered_elements(elements_data, align=3)
 model.add_verax_restraints(verax_restraints)
 model.add_lator_restraints(lator_restraints)
 model.add_nodal_loads(nodal_loads)
@@ -90,11 +92,12 @@ maxN, maxV, maxM, maxw = solver1.max_vals()
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)
 solver2.solve()
-mu_cr = solver2.mu_crs[0]
+mu_cr = 2 * solver2.mu_crs[0]
 
 # Resultados y comparacion
-mu_cr_ref     = [1.979, 1.742, 1.475, 1.006]
-mu_cr_ltbeamn = [1.943, 1.722, 1.469, 1.010]
+mu_cr_ref     = np.array([146.4, 56.20, 29.23])
+mu_cr_ltbeamn = np.array([193.7, 69.32, 34.55])
+mu_cr_ltbeamn = np.array([203.77, 77.81, 41.3]) * 2
 
 
 print("\n" + "="*55)
@@ -112,10 +115,10 @@ print(f"  Moment max.       Mmax:          {maxM/1e3:>16.4f} kNm")
 print(f"  Displacement max. w_max:         {maxw*1e3:>16.4f} mm")
 
 print("\n STABILITY ANALYSIS")
-print(f"  Ratio r=N/Q:                            {r:>12}")
-print(f"  Critical load factor μ_cr (Reference):  {mu_cr_ref[idx]:>12.4f}")
-print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
-print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn[idx]:>12.4f}")
+print(f"  Lenght (L):                             {L:>11.2f} m")
+print(f"  Critical load factor μ_cr  (Reference): {mu_cr_ref[idx]:>12.4f}")
+print(f"  Critical load factor 2μ_cr (PyLTB):     {mu_cr:>12.4f}")
+print(f"  Critical load factor 2μ_cr (LTBeamN):   {mu_cr_ltbeamn[idx]:>12.4f}")
 print(f"  Result diff. with Reference:            {abs(mu_cr - mu_cr_ref[idx])/mu_cr_ref[idx]*100:>11.2f} %")
 print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn[idx])/mu_cr_ltbeamn[idx]*100:>11.2f} %")
 print("\n" + "="*55 + "\n")
