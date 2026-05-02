@@ -65,7 +65,7 @@ elements_data = np.array(elements_data)
 # ----- RESTRICCIONES --------
 # Simplemente apoyado
 verax_restraints = np.array([
-    [0,       0, 1, 0],
+    [0,       1, 1, 0],
     [nelems,  0, 1, 0],
 ])
 # Simplemente apoyado

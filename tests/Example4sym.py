@@ -77,7 +77,7 @@ rez_exacto = np.abs(z_SC_apoyo - z_SC_centr)
 print(rez_exacto)
 
 nodal_loads = np.array([
-    [nelems, 0, 3,    0.0, 0.0,    0.0, -500.0, 0.0]
+    [nelems, 0, 3,    0.0, rez_exacto,    0.0, -500.0, 0.0]
 ])
 
 

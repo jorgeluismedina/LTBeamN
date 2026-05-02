@@ -28,11 +28,11 @@ section_min = ISection_MS(h=0.60*0.4, bf1=0.20, bf2=0.05,
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
-idx = 2
+idx = 0
 Ls  = np.array([6, 9, 12]) #[m]
 L   = Ls[idx]
 
-nelems = int(30 * L / 2)
+nelems = int(20 * L / 2)
 nnods  = nelems + 1
 
 # Coordenadas de nodos
@@ -63,8 +63,8 @@ elements_data = np.array(elements_data)
 # ----- RESTRICCIONES --------
 # Simplemente apoyado
 verax_restraints = np.array([
-    [0,       0, 1, 0],
-    [nelems,  1, 0, 0],
+    [0,       1, 1, 0],
+    [nelems,  0, 1, 0],
 ])
 # Simplemente apoyado
 lator_restraints = np.array([
