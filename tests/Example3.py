@@ -28,7 +28,7 @@ section_min = ISection_MS(h=0.60*0.4, bf1=0.15, bf2=0.15,
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
-idx = 2
+idx = 0
 Ls  = np.array([6, 9, 12]) #[m]
 L   = Ls[idx]
 
@@ -39,9 +39,16 @@ nnods  = nelems + 1
 coordinates = np.linspace(0, L, nelems+1)
 norm_coords = coordinates / L
 
+# Re-escalar para que la mitad izquierda vaya de 0.0 a 1.0
+norm_coords_left = norm_coords[0:nnods//2+1] * 2.0
+
+# Re-escalar para que la mitad derecha vaya de 0.0 a 1.0
+# (restamos 0.5 para que empiece en 0, y multiplicamos por 2)
+norm_coords_right = (norm_coords[nnods//2+1:] - 0.5) * 2.0
+
 # Generacion de secciones
-node_sections_left  = interpolate_multiple_sections(section_min, section_max, norm_coords[0:nnods//2+1])
-node_sections_right = interpolate_multiple_sections(section_max, section_min, norm_coords[nnods//2+1:])
+node_sections_left  = interpolate_multiple_sections(section_min, section_max, norm_coords_left)
+node_sections_right = interpolate_multiple_sections(section_max, section_min, norm_coords_right)
 node_sections = node_sections_left + node_sections_right
 
 # Informacion de elementos
@@ -54,12 +61,12 @@ elements_data = np.array(elements_data)
 
 
 # ----- RESTRICCIONES --------
-# Empotramiento
+
 verax_restraints = np.array([
     [0,       1, 1, 0],
     [nelems,  1, 1, 0],
 ])
-# Empotramiento
+
 lator_restraints = np.array([
     [0,       1, 0, 1, 0],
     [nelems,  1, 0, 1, 0],
@@ -69,7 +76,7 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga puntual en la punta sobre la mesa superior
 nodal_loads = np.array([
-    [nelems//2, 0, 3,   0.0, -1000.0, 0.0]
+    [nelems//2,   0, 3,    0.0, 0.0,    0.0, -1000.0, 0.0]
 ])
 
 
@@ -117,8 +124,8 @@ print(f"  Displacement max. w_max:         {maxw*1e3:>16.4f} mm")
 
 print("\n STABILITY ANALYSIS")
 print(f"  Lenght (L):                             {L:>11.2f} m")
-print(f"  Critical load factor μ_cr (Reference):  {mu_cr_ref[idx]:>12.4f}")
 print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
+print(f"  Critical load factor μ_cr (Reference):  {mu_cr_ref[idx]:>12.4f}")
 print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn[idx]:>12.4f}")
 print(f"  Result diff. with Reference:            {abs(mu_cr - mu_cr_ref[idx])/mu_cr_ref[idx]*100:>11.2f} %")
 print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn[idx])/mu_cr_ltbeamn[idx]*100:>11.2f} %")

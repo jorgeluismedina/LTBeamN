@@ -27,9 +27,6 @@ class StabilityModel():
         # cargas estatico
         self.loaded_nodes = [] # tags de nodos cargados
         self.nodal_loads = [] # cargas nodales
-        self.fx_load_pos = [] # posicion de carga axial
-        self.fz_load_pos = [] # posicion de carga vertical
-
         self.loaded_elems = [] #tags
 
     def add_materials(self, materials): 
@@ -152,43 +149,46 @@ class StabilityModel():
         """
         Cargas puntuales nodales en coordenadas locales.
  
-        Formato: [node, fxpos, fzpos, Fx, Fz, Mx]
+        Formato: [node, fxpos, fzpos, fxez, fzez, Fx, Fz, Mx]
             fzpos : altura de Fz — 0→G, 1→SC, 2→ala inf, 3→ala sup
                     (usado en el problema de estabilidad, StabilitySolver)
             fxpos : altura de Fx — mismos códigos
                     (la corrección ΔM = Fx·ez la aplica StaticSolver
                     en assemble_verax_F, con la geometría del elemento conectado)
+            fxez, fzez : excentricidad de las cargas Fx y Fz respecto al eje de referencia local
             Fx, Fz, Mx : carga axial, vertical y momento nodal
         """
-        self.loaded_nodes = list(nodal_loads_data[:,0].astype(int))
-        self.fx_loads_pos = nodal_loads_data[:,1].astype(int)
-        self.fz_loads_pos = nodal_loads_data[:,2].astype(int)
-        self.nodal_loads  = nodal_loads_data[:,3:].astype(float) # [Fx, Fz, Mx]
+        self.loaded_nodes   = list(nodal_loads_data[:,0].astype(int))
+        self.nloads_pos_ref = nodal_loads_data[:,1:3].astype(int) # posiciones de Fx y Fz
+        self.nloads_rel_ez  = nodal_loads_data[:,3:5].astype(float) # z relativo a la pos. de Fx y Fz
+        self.nodal_loads    = nodal_loads_data[:,5:].astype(float) # [Fx, Fz, Mx]
         
 
     def add_elem_loads(self, elem_loads_data):
         """
         Cargas distribuidas de elemento en coordenadas locales.
  
-        Formato: [id_elem, qzpos, qxpos, qxi, qzi, qxj, qzj]
+        Formato: [id_elem, qzpos, qxpos, qxez, qzez, qxi, qzi, qxj, qzj]
             qzpos : altura de qz — 0→G, 1→SC, 2→ala inf, 3→ala sup
             qxpos : altura de qx — mismos códigos
             qxi, qzi : intensidades en nodo i (axial, transversal)
             qxj, qzj : intensidades en nodo j (axial, transversal)
         """
-        self.loaded_elems = list(elem_loads_data[:,0].astype(int))
-        self.qx_load_pos  = elem_loads_data[:,1].astype(int)
-        self.qz_load_pos  = elem_loads_data[:,2].astype(int)
-        self.elem_loads   = elem_loads_data[:,3:].astype(float)
+        self.loaded_elems   = list(elem_loads_data[:,0].astype(int))
+        self.eloads_pos_ref = elem_loads_data[:,1:3].astype(int) # posiciones de qz y qx
+        self.eloads_rel_ez  = elem_loads_data[:,3:5].astype(float) # z relativo a la pos. de qz y qx
+        self.elem_loads     = elem_loads_data[:,5:].astype(float)
         
 
         for load_data in elem_loads_data:
             id_elem = int(load_data[0])
             qxpos   = load_data[1].astype(int)
             qzpos   = load_data[2].astype(int)
-            loads   = load_data[3:].astype(float)
+            qxrz    = load_data[3].astype(float)
+            qzrz    = load_data[4].astype(float)
+            loads   = load_data[5:].astype(float)
 
-            self.elems[id_elem].add_loads(qxpos, qzpos, *loads)
+            self.elems[id_elem].add_loads(qxpos, qzpos, qxrz, qzrz, *loads)
 
 
 

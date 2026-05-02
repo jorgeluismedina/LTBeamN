@@ -28,7 +28,7 @@ section_min = ISection_MS(h=0.60*0.4, bf1=0.20, bf2=0.05,
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
-idx = 1
+idx = 0
 Ls  = np.array([6, 9, 12]) / 2 #[m]
 L   = Ls[idx]
 
@@ -54,7 +54,7 @@ elements_data = np.array(elements_data)
 
 # ----- RESTRICCIONES --------
 verax_restraints = np.array([
-    [0,       1, 1, 0],
+    [0,       0, 1, 0],
     [nelems,  1, 0, 1]
 ])
 
@@ -65,9 +65,19 @@ lator_restraints = np.array([
 
 
 # ----- CARGAS NODALES --------
-# Carga puntual en la punta sobre la mesa superior
+# Aproximando centro de torsion
+
+# 1. Calcular las coordenadas locales Z respecto al centroide (align = 0)
+# z_from_ref(align=0, pos=1) da la distancia del Centroide (0) al SC (1)
+z_SC_apoyo = section_min.z_from_ref(0, 1)  # Esta es la constante para la línea TC
+z_SC_centr = section_max.z_from_ref(0, 1)  # SC local que usa LTBeamN por defecto
+
+# 2. La distancia exacta a sumar
+rez_exacto = np.abs(z_SC_apoyo - z_SC_centr)
+print(rez_exacto)
+
 nodal_loads = np.array([
-    [nelems, 0, 3,   0.0, -1000.0, 0.0]
+    [nelems, 0, 3,    0.0, 0.0,    0.0, -500.0, 0.0]
 ])
 
 
@@ -116,8 +126,8 @@ print(f"  Displacement max. w_max:         {maxw*1e3:>16.4f} mm")
 
 print("\n STABILITY ANALYSIS")
 print(f"  Lenght (L):                             {L:>11.2f} m")
-print(f"  Critical load factor μ_cr (Reference):  {mu_cr_ref[idx]:>12.4f}")
 print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
+print(f"  Critical load factor μ_cr (Reference):  {mu_cr_ref[idx]:>12.4f}")
 print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn[idx]:>12.4f}")
 print(f"  Result diff. with Reference:            {abs(mu_cr - mu_cr_ref[idx])/mu_cr_ref[idx]*100:>11.2f} %")
 print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn[idx])/mu_cr_ltbeamn[idx]*100:>11.2f} %")

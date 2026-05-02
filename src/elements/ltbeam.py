@@ -24,11 +24,10 @@ class LTBeam(Beam):
         self.loads  = np.zeros(6)
         self.forces = np.zeros(6)
         self.disps  = np.zeros(6)
-        self.load_intensities = np.zeros(4)
 
-        # Posiciones de cargas distribuidas
-        self.qzpos = 0
-        self.qxpos = 0
+        self.load_intensities   = np.zeros(4, dtype=int)
+        self.load_positions_ref = np.zeros(2, dtype=int)
+        self.load_relatives_ez  = np.zeros(2, dtype=int)
 
 
         
@@ -236,15 +235,18 @@ class LTBeam(Beam):
         """ Matriz geométrica por altura de carga transversal distribuida (8x8) """
         qzi  = self.load_intensities[1]
         qzj  = self.load_intensities[3]
-        #qzez = self.section.get_load_height(self.qzpos)
-        qzez = self.section.z_from_ref(1, self.qzpos)
+
+        # Excentricidad de la carga vertical distribuida respecto al eje de referencia
+        pos  = self.load_positions_ref[1]
+        rez  = self.load_relatives_ez[1]
+        qzez = self.section.z_from_ref(1, pos) + rez
          
         # qz(xi) = qzi*(1-xi) + qzj*xi
         Q_base = (qzi * self.NiNj_1_xi_matrix() + 
                   qzj * self.NiNj_xi_matrix())
 
         KgQ = np.zeros((8, 8))       
-        KgQ[self.idx_tt] += qzez * Q_base # Bloque t-t (torsion)
+        KgQ[self.idx_tt] += Q_base * qzez # Bloque t-t (torsion)
 
         return KgQ
 
@@ -258,7 +260,7 @@ class LTBeam(Beam):
     
     
 
-    def add_loads(self, qxpos, qzpos, qxi, qzi, qxj, qzj):
+    def add_loads(self, qxpos, qzpos, qxrz, qzrz, qxi, qzi, qxj, qzj):
         """ Añade cargas en coordenadas locales """
         # qxi = intensidad en el nodo i en direccion de la barra
         # qxj = intensidad en el nodo j en direccion de la barra
@@ -267,9 +269,9 @@ class LTBeam(Beam):
         # qxpos = posicion (altura) de aplicacion de la carga axial
         # qzpos = posicion (altura) de aplicacion de la carga vertical
 
-        self.load_intensities = [qxi, qzi, qxj, qzj]
-        self.qxpos = int(qxpos)
-        self.qzpos = int(qzpos)
+        self.load_intensities   = np.array([qxi, qzi, qxj, qzj], dtype=int)
+        self.load_positions_ref = np.array([qxpos, qzpos], dtype=int)
+        self.load_relatives_ez  = np.array([qxrz, qzrz], dtype=int)
         
         L = self.length
 
@@ -281,9 +283,9 @@ class LTBeam(Beam):
         self.loads[5] = -(2*qzi + 3*qzj) * L**2 / 60
 
         # Corrección por excentricidad de carga axial distribuida
-        ez = -self.section.z_from_ref(0, int(qxpos)) # para seguir la convencion de momentos, ez es negativo
-        mi = qxi * ez
-        mj = qxj * ez
+        qxez = -(self.section.z_from_ref(0, int(qxpos)) + qxrz) # para seguir la convencion de momentos, ez es negativo
+        mi = qxi * qxez
+        mj = qxj * qxez
 
         self.loads[1] += -0.5  * (mi + mj)        
         self.loads[2] +=  L/12 * (mi - mj)        

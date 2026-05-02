@@ -30,11 +30,10 @@ class LTBeamTap(Beam):
         self.forces  = np.zeros(6)
         self.forcesG = np.zeros(6)
         self.disps   = np.zeros(6)
-        self.load_intensities = np.zeros(4)
-
-        # Posiciones de cargas distribuidas
-        self.qxpos = 0
-        self.qzpos = 0
+        
+        self.load_intensities   = np.zeros(4, dtype=int)
+        self.load_positions_ref = np.zeros(2, dtype=int)
+        self.load_relatives_ez  = np.zeros(2, dtype=int)
 
         
 
@@ -214,7 +213,11 @@ class LTBeamTap(Beam):
             zS      = section.zS
             i02     = section.i0**2
             beta_z  = section.beta_z
-            qzez    = section.z_from_ref(1, self.qzpos)
+
+            # Excentricidad de la carga vertical distribuida respecto al eje de referencia
+            pos  = self.load_positions_ref[1]
+            rez  = self.load_relatives_ez[1]
+            qzez = section.z_from_ref(1, pos) + rez
 
             # Vectores de interpolación para ensamblar término a término
             vec_dv, vec_t, vec_dt = self.compute_interpolation_vectors(xi)
@@ -246,7 +249,7 @@ class LTBeamTap(Beam):
 
     
 
-    def add_loads(self, qxpos, qzpos, qxi, qzi, qxj, qzj):
+    def add_loads(self, qxpos, qzpos, qxrz, qzrz, qxi, qzi, qxj, qzj):
         """ Añade cargas en coordenadas locales """
         # qxi = intensidad en el nodo i en direccion de la barra
         # qxj = intensidad en el nodo j en direccion de la barra
@@ -255,9 +258,9 @@ class LTBeamTap(Beam):
         # qxpos = posicion (altura) de aplicacion de la carga axial
         # qzpos = posicion (altura) de aplicacion de la carga vertical
 
-        self.load_intensities = [qxi, qzi, qxj, qzj]
-        self.qxpos = int(qxpos)
-        self.qzpos = int(qzpos)
+        self.load_intensities   = np.array([qxi, qzi, qxj, qzj], dtype=int)
+        self.load_positions_ref = np.array([qxpos, qzpos], dtype=int)
+        self.load_relatives_ez  = np.array([qxrz, qzrz], dtype=int)
         
         L = self.length
 
@@ -269,10 +272,10 @@ class LTBeamTap(Beam):
         self.loads[5] = -(2*qzi + 3*qzj) * L**2 / 60
 
         # Corrección por excentricidad de carga axial distribuida
-        ezi = -self.section_i.z_from_ref(self.align, int(qxpos))
-        ezj = -self.section_j.z_from_ref(self.align, int(qxpos))
-        mi = qxi * ezi
-        mj = qxj * ezj
+        qxezi = -(self.section_i.z_from_ref(self.align, int(qxpos)) + qxrz)
+        qxezj = -(self.section_j.z_from_ref(self.align, int(qxpos)) + qxrz)
+        mi = qxi * qxezi
+        mj = qxj * qxezj
  
         self.loads[1] += -0.5  * (mi + mj)        
         self.loads[2] +=  L/12 * (mi - mj)        

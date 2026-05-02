@@ -28,7 +28,7 @@ section_min = ISection_MS(h=0.60*0.4, bf1=0.15, bf2=0.15,
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
-idx = 2
+idx = 1
 Ls  = np.array([6, 9, 12]) / 2 #[m]
 L   = Ls[idx]
 
@@ -54,7 +54,7 @@ elements_data = np.array(elements_data)
 
 # ----- RESTRICCIONES --------
 verax_restraints = np.array([
-    [0,       1, 1, 0],
+    [0,       0, 1, 0],
     [nelems,  1, 0, 1]
 ])
 
@@ -65,9 +65,18 @@ lator_restraints = np.array([
 
 
 # ----- CARGAS NODALES --------
-# Carga puntual en la punta sobre la mesa superior
+# Carga puntual en el centro sobre el centro de corte
+# 1. Calcular las coordenadas locales Z respecto al centroide (align = 0)
+# z_from_ref(align=0, pos=1) da la distancia del Centroide (0) al SC (1)
+z_SC_apoyo = section_min.z_from_ref(3, 1)  # Esta es la constante para la línea TC
+z_SC_centr = section_max.z_from_ref(3, 1)  # SC local que usa LTBeamN por defecto
+
+# 2. La distancia exacta a restar
+rez_exacto = np.abs(z_SC_apoyo - z_SC_centr)
+print(-rez_exacto)
+
 nodal_loads = np.array([
-    [nelems, 0, 1,   0.0, -1000.0, 0.0]
+    [nelems, 0, 1,   0.0, -rez_exacto,   0.0, -500.0, 0.0]
 ])
 
 
@@ -92,12 +101,12 @@ maxN, maxV, maxM, maxw = solver1.max_vals()
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)
 solver2.solve()
-mu_cr = 2 * solver2.mu_crs[0]
+mu_cr = solver2.mu_crs[0]
 
 # Resultados y comparacion
 mu_cr_ref     = np.array([146.4, 56.20, 29.23])
 mu_cr_ltbeamn = np.array([193.7, 69.32, 34.55])
-mu_cr_ltbeamn = np.array([203.77, 77.81, 41.3]) * 2
+#mu_cr_ltbeamn = np.array([407.8, 155., 41.3])
 
 
 print("\n" + "="*55)
@@ -116,9 +125,9 @@ print(f"  Displacement max. w_max:         {maxw*1e3:>16.4f} mm")
 
 print("\n STABILITY ANALYSIS")
 print(f"  Lenght (L):                             {L:>11.2f} m")
-print(f"  Critical load factor μ_cr  (Reference): {mu_cr_ref[idx]:>12.4f}")
-print(f"  Critical load factor 2μ_cr (PyLTB):     {mu_cr:>12.4f}")
-print(f"  Critical load factor 2μ_cr (LTBeamN):   {mu_cr_ltbeamn[idx]:>12.4f}")
+print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
+print(f"  Critical load factor μ_cr (Reference):  {mu_cr_ref[idx]:>12.4f}")
+print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn[idx]:>12.4f}")
 print(f"  Result diff. with Reference:            {abs(mu_cr - mu_cr_ref[idx])/mu_cr_ref[idx]*100:>11.2f} %")
 print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn[idx])/mu_cr_ltbeamn[idx]*100:>11.2f} %")
 print("\n" + "="*55 + "\n")

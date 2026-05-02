@@ -65,8 +65,8 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga de flexion pura unitaria
 nodal_loads = np.array([
-    [0,      0,   0.0, 0.0,  200000.0],
-    [nelems, 0,   0.0, 0.0, -800000.0]
+    [0,      0,   0.0, 0.0,    0.0, 0.0,  200000.0],
+    [nelems, 0,   0.0, 0.0,    0.0, 0.0, -800000.0]
 ])
 
 

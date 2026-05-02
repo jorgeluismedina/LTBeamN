@@ -32,17 +32,19 @@ class StaticSolver():
             F[dofs] = vals
 
             for i, node in enumerate(self.model.loaded_nodes):
-                    Fx  = self.model.nodal_loads[i, 0]
-                    pos = self.model.fx_loads_pos[i]
+                dof_Mx = self.model.avrx_dof[node, 2]
+                Fx  = self.model.nodal_loads[i, 0]
+                
+                if Fx == 0.0:
+                    continue
     
-                    if Fx == 0.0:
-                        continue
-    
-                    sec    = self.model.sections[node]
-                    align  = self.model.node_align[node]
-                    ez     = sec.z_from_ref(align, pos)
-                    dof_Mx = self.model.avrx_dof[node, 2]
-                    F[dof_Mx] -= Fx * ez #el trabajo de la fuerza axial es negativo
+                pos    = self.model.nloads_pos_ref[i, 0]
+                rez    = self.model.nloads_rel_ez[i, 0]
+                align  = self.model.node_align[node]
+                sec    = self.model.sections[node]
+                fxez   = sec.z_from_ref(align, pos) + rez
+                  
+                F[dof_Mx] -= Fx * fxez #el trabajo de la fuerza axial tiene que ser negativo
 
         if self.model.loaded_elems:
             for id_elem in self.model.loaded_elems:
