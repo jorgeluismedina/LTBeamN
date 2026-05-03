@@ -9,9 +9,9 @@ from src.gauss_quad import gauss_1d
 
 
 class LTBeamTap(Beam):
-    def __init__(self, mater, section_i, section_j, coord, conec, 
-                 verax_dof, lator_dof, align=0):
-        super().__init__(mater, coord, conec, verax_dof, lator_dof)
+    def __init__(self, mater, section_i, section_j, coords, conec, 
+                 vrx_dofs, ltr_dofs, align=0):
+        super().__init__(mater, coords, conec, vrx_dofs, ltr_dofs)
 
         self.section_i = section_i
         self.section_j = section_j
@@ -38,7 +38,7 @@ class LTBeamTap(Beam):
         
 
     def init_geometry(self):
-        vector = self.coord[1] - self.coord[0]
+        vector = self.coords[1] - self.coords[0]
         self.length = sp.linalg.norm(vector)
       
         aT_i = abs(self.section_i.zf1 - self.section_i.zS)

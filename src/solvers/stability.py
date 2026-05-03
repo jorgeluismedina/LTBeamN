@@ -11,12 +11,12 @@ class StabilitySolver():
         """Ensambla matriz de rigidez global."""
         nltr_dofs = self.model.nltr_dofs
         K0_ltr = np.zeros((nltr_dofs, nltr_dofs))
-        for elem in self.model.elems:
-            K0_ltr[np.ix_(elem.ltr_dof, elem.ltr_dof)] += elem.K0_ltr
+        for elem in self.model.elements:
+            K0_ltr[np.ix_(elem.ltr_dofs, elem.ltr_dofs)] += elem.K0_ltr
 
         for i, node in enumerate(self.model.spring_nodes):
-            dof_v = self.model.altr_dof[node, 0]  # DOF v
-            dof_t = self.model.altr_dof[node, 2]  # DOF theta
+            dof_v = self.model.altr_dofs[node, 0]  # DOF v
+            dof_t = self.model.altr_dofs[node, 2]  # DOF theta
             kv = self.model.spring_kv[i]
             kt = self.model.spring_kt[i]
 
@@ -35,12 +35,12 @@ class StabilitySolver():
         """Ensambla matriz geometrica global."""
         nltr_dofs = self.model.nltr_dofs
         Kg_ltr = np.zeros((nltr_dofs, nltr_dofs))
-        for elem in self.model.elems:
+        for elem in self.model.elements:
             elem.update_lator_Kg()
-            Kg_ltr[np.ix_(elem.ltr_dof, elem.ltr_dof)] += elem.Kg_ltr
+            Kg_ltr[np.ix_(elem.ltr_dofs, elem.ltr_dofs)] += elem.Kg_ltr
 
         for i, node in enumerate(self.model.loaded_nodes):
-            dof_t = self.model.altr_dof[node, 2]      # DOF θ del nodo
+            dof_t = self.model.altr_dofs[node, 2]      # DOF θ del nodo
             Fz    = self.model.nodal_loads[i, 1]      # carga vertical
 
             pos  = self.model.nloads_pos[i, 1]   # código de altura
@@ -55,15 +55,15 @@ class StabilitySolver():
     def process_lator_restraints(self):
         """Separa DOFs fijos y libres."""
         dofs, vals = self.model.assemble_global_vec(
-            self.model.altr_dof,
+            self.model.altr_dofs,
             self.model.sltr_nodes, 
             self.model.ltr_restraints
         )
-        adof = self.model.altr_dof.ravel()
-        sdof = dofs[vals.astype(bool)] # DOFs fijos
-        fdof = np.setdiff1d(adof, sdof) # DOFs libres
+        adofs = self.model.altr_dofs.ravel()
+        sdofs = dofs[vals.astype(bool)] # DOFs fijos
+        fdofs = np.setdiff1d(adofs, sdofs) # DOFs libres
         
-        return fdof, sdof
+        return fdofs, sdofs
     
     def solve(self):
         """ Resuelve el problema de estabilidad y retorna resultados."""

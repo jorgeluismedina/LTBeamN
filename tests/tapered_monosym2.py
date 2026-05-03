@@ -82,8 +82,8 @@ model.add_lator_restraints(lator_restraints)
 model.add_elem_loads(elem_loads)
 
 
-#print(model.elems[0].dh1, model.elems[0].dh2)
-#print(model.elems[1].dh1, model.elems[1].dh2)
+#print(model.elements[0].dh1, model.elements[0].dh2)
+#print(model.elements[1].dh1, model.elements[1].dh2)
 
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
@@ -104,7 +104,7 @@ print(" ANALYSIS RESULTS ".center(55))
 print("="*55)
 
 print("\n MESH DATA")
-print(f"  Number of nodes:                 {model.nnods:>20}")
+print(f"  Number of nodes:                 {model.nnodes:>20}")
 print(f"  Number of elements:              {model.nelems:>20}")
 
 print("\n STATIC ANALYSIS")

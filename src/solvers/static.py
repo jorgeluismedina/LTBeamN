@@ -13,8 +13,8 @@ class StaticSolver():
         """Ensambla matriz de rigidez global."""
         nvrx_dofs = self.model.nvrx_dofs
         K0_vrx = np.zeros((nvrx_dofs, nvrx_dofs))
-        for elem in self.model.elems:
-            K0_vrx[np.ix_(elem.vrx_dof, elem.vrx_dof)] += elem.K0_vrx
+        for elem in self.model.elements:
+            K0_vrx[np.ix_(elem.vrx_dofs, elem.vrx_dofs)] += elem.K0_vrx
         
         return K0_vrx
     
@@ -25,14 +25,14 @@ class StaticSolver():
         
         if self.model.loaded_nodes:
             dofs, vals = self.model.assemble_global_vec(
-                self.model.avrx_dof, 
+                self.model.avrx_dofs, 
                 self.model.loaded_nodes, 
                 self.model.nodal_loads
             )
             F[dofs] = vals
 
             for i, node in enumerate(self.model.loaded_nodes):
-                dof_Mx = self.model.avrx_dof[node, 2]
+                dof_Mx = self.model.avrx_dofs[node, 2]
                 Fx  = self.model.nodal_loads[i, 0]
                 
                 if Fx == 0.0:
@@ -48,7 +48,7 @@ class StaticSolver():
 
         if self.model.loaded_elems:
             for id_elem in self.model.loaded_elems:
-                F[self.model.elems[id_elem].vrx_dof] += self.model.elems[id_elem].loads
+                F[self.model.elements[id_elem].vrx_dofs] += self.model.elements[id_elem].loads
 
         return F
 
@@ -56,15 +56,15 @@ class StaticSolver():
     def process_verax_restraints(self):
         """Separa DOFs fijos y libres."""
         dofs, vals = self.model.assemble_global_vec(
-            self.model.avrx_dof,
+            self.model.avrx_dofs,
             self.model.svrx_nodes, 
             self.model.vrx_restraints
         )
-        adof = self.model.avrx_dof.ravel()
-        sdof = dofs[vals.astype(bool)] # DOFs fijos
-        fdof = np.setdiff1d(adof, sdof) # DOFs libres
+        adofs = self.model.avrx_dofs.ravel()
+        sdofs = dofs[vals.astype(bool)] # DOFs fijos
+        fdofs = np.setdiff1d(adofs, sdofs) # DOFs libres
         
-        return fdof, sdof
+        return fdofs, sdofs
 
     
     def solve(self):
@@ -88,13 +88,13 @@ class StaticSolver():
         self.react = K0_sf @ disps_f - F_s
         
         self.compute_internal_forces(self.disps)
-        self.fields = [elem.get_fields() for elem in self.model.elems]
+        self.fields = [elem.get_fields() for elem in self.model.elements]
         
     
     def compute_internal_forces(self, glob_disps):
         """Calcula fuerzas internas verticales en elementos."""
-        for elem in self.model.elems:
-            elem.calculate_forces(glob_disps[elem.vrx_dof])
+        for elem in self.model.elements:
+            elem.calculate_forces(glob_disps[elem.vrx_dofs])
 
 
     
@@ -103,7 +103,7 @@ class StaticSolver():
         N = np.concatenate([f[1] for f in self.fields])
         V = np.concatenate([f[2] for f in self.fields])
         M = np.concatenate([f[3] for f in self.fields])
-        w = self.disps.reshape(self.model.nnods, self.model.nvrx_dofn)[:, 1]
+        w = self.disps.reshape(self.model.nnodes, self.model.nvrx_dofn)[:, 1]
         return (N[np.argmax(np.abs(N))],
                 V[np.argmax(np.abs(V))],
                 M[np.argmax(np.abs(M))],
@@ -126,8 +126,8 @@ class StaticSolver():
 
         N_globals, V_globals, M_globals, def_shapes = [], [], [], []
 
-        for elem, (x, N, V, M, u, w) in zip(self.model.elems, self.fields):
-            X = elem.coord[0] + x
+        for elem, (x, N, V, M, u, w) in zip(self.model.elements, self.fields):
+            X = elem.coords[0] + x
             N_globals.append(np.vstack([X, N/max_N*esc1, N]))
             V_globals.append(np.vstack([X, V/max_V*esc1, V]))
             M_globals.append(np.vstack([X, M/max_M*esc2, M]))
@@ -152,7 +152,7 @@ class StaticSolver():
         M_globals = []
         def_shapes = []
 
-        for e, elem in enumerate(self.model.elems):
+        for e, elem in enumerate(self.model.elements):
             x = all_x[e]
             N = all_N[e] / max_N # axial normalizada
             V = all_V[e] / max_V # corte  normalizada
@@ -162,7 +162,7 @@ class StaticSolver():
 
             c, s = elem.dir_vec 
             # Coordenadas globales de puntos a lo largo del elemento
-            X0, Y0 = elem.coord[0]
+            X0, Y0 = elem.coords[0]
             X = X0 + c*x
             Y = Y0 + s*x
 

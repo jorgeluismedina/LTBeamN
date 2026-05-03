@@ -17,7 +17,7 @@ class ElementFactory:
     @classmethod
     def create_uniform(cls, etype, material, section, 
                        coord, conec, 
-                       verax_dof, lator_dof):
+                       vrx_dofs, ltr_dofs):
         
         """Crea instancia del elemento."""
         if etype not in cls.registry:
@@ -25,14 +25,14 @@ class ElementFactory:
         
         return cls.registry[etype](material, section, 
                                    coord, conec, 
-                                   verax_dof, lator_dof)
+                                   vrx_dofs, ltr_dofs)
     
 
     @classmethod
     def create_tapered(cls, etype, material,
                        section_i, section_j,
                        coord, conec,
-                       verax_dof, lator_dof,
+                       vrx_dofs, ltr_dofs,
                        align=0):
         
         """ Crea instancia de elemento tapered. """
@@ -42,7 +42,7 @@ class ElementFactory:
         return cls.registry[etype](material, 
                                    section_i, section_j, 
                                    coord, conec, 
-                                   verax_dof, lator_dof,
+                                   vrx_dofs, ltr_dofs,
                                    align=align)
         
 

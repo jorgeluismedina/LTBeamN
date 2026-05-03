@@ -83,8 +83,8 @@ solver1 = StaticSolver(model)
 solver1.solve()
 maxN, maxV, maxM, maxw = solver1.max_vals() 
 
-print(model.elems[0].forces)
-print(model.elems[0].forcesG)
+print(model.elements[0].forces)
+print(model.elements[0].forcesG)
 
 # Resolcion del problema de estabilidad
 solver2 = StabilitySolver(model)
@@ -99,7 +99,7 @@ print(" ANALYSIS RESULTS ".center(55))
 print("="*55)
 
 print("\n MESH DATA")
-print(f"  Number of nodes:                 {model.nnods:>20}")
+print(f"  Number of nodes:                 {model.nnodes:>20}")
 print(f"  Number of elements:              {model.nelems:>20}")
 
 print("\n STATIC ANALYSIS")

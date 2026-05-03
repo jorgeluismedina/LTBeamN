@@ -3,13 +3,12 @@ import numpy as np
 from abc import ABC, abstractmethod
 
 class Beam():
-    def __init__(self, mater, coord, conec, verax_dof, lator_dof):
-        self.mater = mater
-        self.coord = coord
-        self.conec = conec
-        #self.section = section
-        self.vrx_dof = verax_dof # vertical deflection and axial displacement
-        self.ltr_dof = lator_dof # lateral deflection and torsion
+    def __init__(self, mater, coords, conec, vrx_dofs, ltr_dofs):
+        self.mater  = mater
+        self.coords = coords 
+        self.conec  = conec
+        self.vrx_dofs = vrx_dofs # vertical deflection and axial displacement DOFs
+        self.ltr_dofs = ltr_dofs # lateral deflection and torsion DOFs
     
 
 

@@ -107,7 +107,7 @@ print(" ANALYSIS RESULTS ".center(55))
 print("="*55)
 
 print("\n MESH DATA")
-print(f"  Number of nodes:                 {model.nnods:>20}")
+print(f"  Number of nodes:                 {model.nnodes:>20}")
 print(f"  Number of elements:              {model.nelems:>20}")
 
 print("\n STATIC ANALYSIS")

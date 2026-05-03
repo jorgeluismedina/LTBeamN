@@ -64,7 +64,7 @@ def plot_buckling_mode_3d(model, mu_crs, modes, imode=0, scale=1.0):
     v  = v  / v_peak * scale
     th = th / v_peak * scale
  
-    x = model.coord   # posiciones nodales (1D)
+    x = model.coords   # posiciones nodales (1D)
  
     fig = plt.figure(figsize=(14, 6))
     ax  = fig.add_subplot(111, projection='3d')

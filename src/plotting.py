@@ -59,8 +59,8 @@ def plot_diagram(model, diagrams, title=""):
     # ========== PLOTEO ==========
     fig, ax = plt.subplots(figsize=(12, 6))
     
-    for e, elem in enumerate(model.elems):
-        x_elem = elem.coord
+    for e, elem in enumerate(model.elements):
+        x_elem = elem.coords
         y_elem = np.zeros_like(x_elem)
         diag_x, diag_y, vals = diagrams[e]
         
@@ -99,8 +99,8 @@ def plot_diagram(model, diagrams, title=""):
     # Plotea N, V, M
     fig, ax = plt.subplots(figsize=(12, 6))
     
-    for e, elem in enumerate(model.elems):
-        x_elem = elem.coord
+    for e, elem in enumerate(model.elements):
+        x_elem = elem.coords
         y_elem = np.zeros_like(x_elem)
         diag_x, diag_y, vals = diagrams[e]
         
@@ -127,8 +127,8 @@ def plot_deformed(model, def_shapes, title="Deformed Shape"):
     """Plotea original + deformada"""
     fig, ax = plt.subplots(figsize=(12, 6))
     
-    for e, elem in enumerate(model.elems):
-        x_elem = elem.coord
+    for e, elem in enumerate(model.elements):
+        x_elem = elem.coords
         y_elem = np.zeros_like(x_elem)
         X_def, Y_def = def_shapes[e]
         
@@ -153,7 +153,7 @@ def plot_buckling_modes(model, mu_crs, modes, nmodes=2):
     fig, axes = plt.subplots(nmodes, 1, figsize=(12, 3*nmodes), sharex=True)
     if nmodes == 1: axes = [axes]
 
-    coord = model.coord
+    coords = model.coords
 
     for i in range(nmodes):
         # Extraer el autovalor y el autovector
@@ -173,17 +173,17 @@ def plot_buckling_modes(model, mu_crs, modes, nmodes=2):
         dth = dth / np.max(np.abs(dth))
 
         # Gráficos
-        axes[i].plot(coord, v,   'r-', lw=1, label=r'$v$')
-        axes[i].plot(coord, dv,  'b-', lw=1, label=r'$v_{,x}$')
-        axes[i].plot(coord, th,  'k-', lw=1, label=r'$\theta$')
-        axes[i].plot(coord, dth, 'g-', lw=1, label=r'$\theta_{,x}$')
+        axes[i].plot(coords, v,   'r-', lw=1, label=r'$v$')
+        axes[i].plot(coords, dv,  'b-', lw=1, label=r'$v_{,x}$')
+        axes[i].plot(coords, th,  'k-', lw=1, label=r'$\theta$')
+        axes[i].plot(coords, dth, 'g-', lw=1, label=r'$\theta_{,x}$')
         
         # Etiquetas y estilo
         axes[i].set_ylabel(rf'Mode {i+1}' + '\n' + rf'$\mu_{{cr}}={mu_cr:.1f}$', 
                           fontsize=9, rotation=0, labelpad=20, va='center')
         axes[i].grid(True, alpha=0.3, ls='--')
         axes[i].set_ylim(-1.05, 1.05)  # Sin espacio en Y
-        axes[i].set_xlim(coord[0], coord[-1])
+        axes[i].set_xlim(coords[0], coords[-1])
         axes[i].set_xlabel('x', fontsize=10)
         
         # Leyenda solo en el primer subplot

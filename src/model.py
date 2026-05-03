@@ -7,8 +7,7 @@ class StabilityModel():
     def __init__(self):
         self.nvrx_dofn = 3 # numero de DOF por nodo (u, w, w,x) 
         self.nltr_dofn = 4 # numero de DOF por nodo (v, v,x, th, th,x)
-        self.elems = [] # cambiar el atributo a elements?
-        #self.conectivities = []
+        self.elements = []
 
         # estatico
         self.svrx_nodes = [] # tags de nodos con DOF de flex. vertical y desp. axial restringidos
@@ -35,29 +34,29 @@ class StabilityModel():
     def add_sections(self, sections):
         self.sections = sections
 
-    def assemble_global_vec(self, all_dof, node_tag, values):
-        dof = all_dof[node_tag].flatten()
+    def assemble_global_vec(self, all_dofs, node_tag, values):
+        dofs = all_dofs[node_tag].flatten()
         vals = np.array(values).flatten()
-        return dof, vals
+        return dofs, vals
 
     def add_nodes(self, coordinates):
-        self.coord = coordinates # cambiar atributo a coordinates?
-        self.nnods = coordinates.shape[0]
+        self.coords = coordinates
+        self.nnodes = coordinates.shape[0]
 
         # DOF problema estatico (u, w, w,x)
-        self.nvrx_dofs = self.nvrx_dofn * self.nnods # numero total de DOF problema estatico
-        self.avrx_dof = np.arange(self.nvrx_dofs).reshape((self.nnods, self.nvrx_dofn)) # DOF ordenados por nodo
+        self.nvrx_dofs = self.nvrx_dofn * self.nnodes # numero total de DOF problema estatico
+        self.avrx_dofs = np.arange(self.nvrx_dofs).reshape((self.nnodes, self.nvrx_dofn)) # DOF ordenados por nodo
 
         # DOF problema de estabilidad (v, v,x, th, th,x)
-        self.nltr_dofs = self.nltr_dofn * self.nnods # numero total de DOF problema estabilidad
-        self.altr_dof = np.arange(self.nltr_dofs).reshape((self.nnods, self.nltr_dofn)) # DOF ordenados por nodo
+        self.nltr_dofs = self.nltr_dofn * self.nnodes # numero total de DOF problema estabilidad
+        self.altr_dofs = np.arange(self.nltr_dofs).reshape((self.nnodes, self.nltr_dofn)) # DOF ordenados por nodo
 
 
     def build_node_alignments(self):
         """ Lista de alineacion de cada nodo, segun los elementos conectados. """
-        self.node_align = ['centroid'] * self.nnods
-        visited = np.zeros(self.nnods, dtype=bool)
-        for elem in self.elems:
+        self.node_align = ['centroid'] * self.nnodes
+        visited = np.zeros(self.nnodes, dtype=bool)
+        for elem in self.elements:
             for node in elem.conec:
                 if not visited[node]:
                     self.node_align[node] = elem.align   # indexado por node id
@@ -73,16 +72,16 @@ class StabilityModel():
             sec   = self.sections[int(nodei)]
             conec = [int(nodei), int(nodej)]
             
-            coord   = self.coord[conec]
-            vrx_dof = self.avrx_dof[conec].flatten()
-            ltr_dof = self.altr_dof[conec].flatten()
+            coords   = self.coords[conec]
+            vrx_dofs = self.avrx_dofs[conec].flatten()
+            ltr_dofs = self.altr_dofs[conec].flatten()
 
             elem = ElementFactory.create_uniform(etype, mat, sec, 
-                                                 coord, conec, 
-                                                 vrx_dof, ltr_dof)
-            self.elems.append(elem)
+                                                 coords, conec, 
+                                                 vrx_dofs, ltr_dofs)
+            self.elements.append(elem)
         
-        self.nelems = len(self.elems)
+        self.nelems = len(self.elements)
         self.build_node_alignments()
             
 
@@ -107,18 +106,18 @@ class StabilityModel():
             secj  = self.sections[int(nodej)]
             conec = [int(nodei), int(nodej)]
             
-            coord   = self.coord[conec]
-            vrx_dof = self.avrx_dof[conec].flatten()
-            ltr_dof = self.altr_dof[conec].flatten()
+            coords   = self.coords[conec]
+            vrx_dofs = self.avrx_dofs[conec].flatten()
+            ltr_dofs = self.altr_dofs[conec].flatten()
 
             elem = ElementFactory.create_tapered(etype, mat, 
                                                  seci, secj,
-                                                 coord, conec, 
-                                                 vrx_dof, ltr_dof,
+                                                 coords, conec, 
+                                                 vrx_dofs, ltr_dofs,
                                                  align=align)
-            self.elems.append(elem)
+            self.elements.append(elem)
         
-        self.nelems = len(self.elems)
+        self.nelems = len(self.elements)
         self.build_node_alignments()
 
 
@@ -188,7 +187,7 @@ class StabilityModel():
             qzrz    = load_data[4].astype(float)
             loads   = load_data[5:].astype(float)
 
-            self.elems[id_elem].add_loads(qxpos, qzpos, qxrz, qzrz, *loads)
+            self.elements[id_elem].add_loads(qxpos, qzpos, qxrz, qzrz, *loads)
 
 
 

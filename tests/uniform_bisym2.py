@@ -98,7 +98,7 @@ print(" ANALYSIS RESULTS ".center(55))
 print("="*55)
 
 print("\n MESH DATA")
-print(f"  Number of nodes:                 {model.nnods:>20}")
+print(f"  Number of nodes:                 {model.nnodes:>20}")
 print(f"  Number of elements:              {model.nelems:>20}")
 
 print("\n STATIC ANALYSIS")
@@ -114,7 +114,7 @@ print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn)/mu
 print("\n" + "="*55 + "\n")
 
  
-#print(model.elems[-1].forces)
+#print(model.elements[-1].forces)
 
 """
 # ----- PLOTEO DE RESULTADOS --------

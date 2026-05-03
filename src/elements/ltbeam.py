@@ -6,8 +6,8 @@ from src.shape_funcs import N_hermite, dN_hermite
 
 
 class LTBeam(Beam):
-    def __init__(self, mater, section, coord, conec, verax_dof, lator_dof):
-        super().__init__(mater,coord, conec, verax_dof, lator_dof)
+    def __init__(self, mater, section, coords, conec, vrx_dofs, ltr_dofs):
+        super().__init__(mater, coords, conec, vrx_dofs, ltr_dofs)
 
         self.section = section
         self.align   = 0
@@ -33,7 +33,7 @@ class LTBeam(Beam):
         
   
     def init_geometry(self):
-        vector = self.coord[1] - self.coord[0]
+        vector = self.coords[1] - self.coords[0]
         self.length = sp.linalg.norm(vector)
 
     
