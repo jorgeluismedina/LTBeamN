@@ -41,12 +41,12 @@ class LTBeamTap(Beam):
         vector = self.coord[1] - self.coord[0]
         self.length = sp.linalg.norm(vector)
       
-        h1_i = abs(self.section_i.zf1 - self.section_i.zS)
-        h2_i = abs(self.section_i.zf2 - self.section_i.zS)
-        h1_j = abs(self.section_j.zf1 - self.section_j.zS)
-        h2_j = abs(self.section_j.zf2 - self.section_j.zS)
-        self.dh1 = (h1_j - h1_i) / self.length
-        self.dh2 = (h2_j - h2_i) / self.length
+        aT_i = abs(self.section_i.zf1 - self.section_i.zS)
+        aB_i = abs(self.section_i.zf2 - self.section_i.zS)
+        aT_j = abs(self.section_j.zf1 - self.section_j.zS)
+        aB_j = abs(self.section_j.zf2 - self.section_j.zS)
+        self.daT = (aT_j - aT_i) / self.length
+        self.daB = (aB_j - aB_i) / self.length
         
     
 
@@ -63,7 +63,7 @@ class LTBeamTap(Beam):
         # Inercias de taper (Andrade 2005 / Beyer 2015 Apendice A)
         I_psi  = 2 * (sec_plus.Iw - 2*gsec.Iw + sec_minus.Iw) / (delta * L)**2
         I_wpsi = (sec_plus.Iw - sec_minus.Iw) / (2 * delta * L)
-        I_ypsi = 2 * (self.dh1 * gsec.Izf1 - self.dh2 * gsec.Izf2) # Aproximacion
+        I_ypsi = 2 * (self.daT * gsec.Izf1 - self.daB * gsec.Izf2) # Aproximacion
         
         gsec.update_tapered_inertias(I_psi, I_wpsi, I_ypsi)
         return gsec
