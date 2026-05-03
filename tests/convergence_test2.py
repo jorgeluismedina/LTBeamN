@@ -49,7 +49,7 @@ def run_model(nelems, etype):
     ])
 
     elem_loads = np.array([
-        [e, 0, 1,   0.0, -1000.0, 0.0, -1000.0] for e in range(nelems)
+        [e, 0, 1, 0.0, 0.0,   0.0, -1000.0, 0.0, -1000.0] for e in range(nelems)
     ])
 
     model = StabilityModel()

@@ -20,11 +20,7 @@ material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2]
 materials = [material1]
 
 # Secciones
-sect1 = ISection_MS(h=0.3, bf1=0.2, bf2=0.12, 
-                    tw=0.01, tf1=0.01, tf2=0.01, 
-                    r1=0.01, r2=0.01) #[m]
-
-
+sect1 = ISection_MS(h=0.3, bf1=0.2, bf2=0.12, tw=0.01, tf1=0.01, tf2=0.01, r1=0.01, r2=0.01) #[m]
 
 
 # ----- CONSTRUCCION DE LA MALLA --------

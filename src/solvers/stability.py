@@ -43,8 +43,8 @@ class StabilitySolver():
             dof_t = self.model.altr_dof[node, 2]      # DOF θ del nodo
             Fz    = self.model.nodal_loads[i, 1]      # carga vertical
 
-            pos  = self.model.nloads_pos_ref[i, 1]   # código de altura
-            rez  = self.model.nloads_rel_ez[i, 1]    # z relativo a la posición de la carga
+            pos  = self.model.nloads_pos[i, 1]   # código de altura
+            rez  = self.model.nloads_rez[i, 1]    # z relativo a la posición de la carga
             sec  = self.model.sections[node]
             fzez = sec.z_from_ref(1, pos) + rez
             

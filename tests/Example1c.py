@@ -19,11 +19,8 @@ material1 = Material(E=2.10e11, nu=0.3, dens=1.0)
 materials = [material1]
 
 # Secciones
-section1 = ISection_MS(h=0.61, bf1=0.18, bf2=0.18, 
-                       tw=0.008, tf1=0.010, tf2=0.010, r1=0.00, r2=0.00) #[m]
-
-section2 = ISection_MS(h=0.305, bf1=0.18, bf2=0.18, 
-                       tw=0.008, tf1=0.010, tf2=0.010, r1=0.00, r2=0.00) #[m]
+section1 = ISection_MS(h=0.61, bf1=0.18, bf2=0.18, tw=0.008, tf1=0.010, tf2=0.010, r1=0.00, r2=0.00) #[m]
+section2 = ISection_MS(h=0.305, bf1=0.18, bf2=0.18, tw=0.008, tf1=0.010, tf2=0.010, r1=0.00, r2=0.00) #[m]
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
@@ -61,7 +58,7 @@ lator_restraints = np.array([
 # Carga puntual vertical Q1 en el extremo libre hacia abajo
 # Carga puntual axial Q2 en el extremo libre hacia la izquierda
 # sobre el ala superior → pos=3
-# sobre el centroide → pos=0
+# sobre el ala superior → pos=3
 nodal_loads = np.array([
     [nelems,  3, 3,   0.0, 0.0,   -1000.0, -1000.0, 0.0]  
 ])

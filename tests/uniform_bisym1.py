@@ -5,15 +5,15 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
-import scipy as sp
-
 import matplotlib.pyplot as plt
+
 from src.model import StabilityModel
 from src.material import Material
 from src.sections.section_bs import ISection_BS
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
+from src.plotting2 import plot_buckling_mode_3d
 
 # Materiales
 material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2]
@@ -137,4 +137,5 @@ plot_deformed(model, all_diagrams[3])
 plot_buckling_modes(model, solver2.mu_crs, solver2.modes) 
 plt.show()
 """
-
+fig, ax = plot_buckling_mode_3d(model, solver2.mu_crs, solver2.modes, imode=0, scale=0.3)
+plt.show()

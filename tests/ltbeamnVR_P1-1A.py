@@ -21,12 +21,8 @@ material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2]
 materials = [material1]
 
 # Secciones
-section1 = ISection_MS(h=0.44, bf1=0.25, bf2=0.25, 
-                       tw=0.014, tf1=0.02, tf2=0.02, r1=0.0, r2=0.0) #[m]
-
-section2 = ISection_MS(h=0.84, bf1=0.25, bf2=0.25, 
-                       tw=0.014, tf1=0.02, tf2=0.02, r1=0.0, r2=0.0) #[m]
-
+section1 = ISection_MS(h=0.44, bf1=0.25, bf2=0.25, tw=0.014, tf1=0.02, tf2=0.02, r1=0.0, r2=0.0) #[m]
+section2 = ISection_MS(h=0.84, bf1=0.25, bf2=0.25, tw=0.014, tf1=0.02, tf2=0.02, r1=0.0, r2=0.0) #[m]
 
 
 

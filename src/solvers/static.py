@@ -38,8 +38,8 @@ class StaticSolver():
                 if Fx == 0.0:
                     continue
     
-                pos    = self.model.nloads_pos_ref[i, 0]
-                rez    = self.model.nloads_rel_ez[i, 0]
+                pos    = self.model.nloads_pos[i, 0]
+                rez    = self.model.nloads_rez[i, 0]
                 align  = self.model.node_align[node]
                 sec    = self.model.sections[node]
                 fxez   = sec.z_from_ref(align, pos) + rez

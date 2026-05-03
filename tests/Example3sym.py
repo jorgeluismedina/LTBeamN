@@ -19,11 +19,8 @@ material1 = Material(E=2.10e11, nu=0.3, dens=1.0)
 materials = [material1]
 
 # Secciones
-section_max = ISection_MS(h=0.60, bf1=0.15, bf2=0.15, 
-                          tw=0.0095, tf1=0.0127, tf2=0.0127, r1=0.00, r2=0.00) #[m]
-
-section_min = ISection_MS(h=0.60*0.4, bf1=0.15, bf2=0.15, 
-                          tw=0.0095, tf1=0.0127, tf2=0.0127, r1=0.00, r2=0.00) #[m]
+section_max = ISection_MS(h=0.60, bf1=0.15, bf2=0.15, tw=0.0095, tf1=0.0127, tf2=0.0127, r1=0.00, r2=0.00) #[m]
+section_min = ISection_MS(h=0.60*0.4, bf1=0.15, bf2=0.15, tw=0.0095, tf1=0.0127, tf2=0.0127, r1=0.00, r2=0.00) #[m]
 
 
 
@@ -54,7 +51,7 @@ elements_data = np.array(elements_data)
 
 # ----- RESTRICCIONES --------
 verax_restraints = np.array([
-    [0,       1, 1, 0],
+    [0,       0, 1, 0],
     [nelems,  1, 0, 1]
 ])
 

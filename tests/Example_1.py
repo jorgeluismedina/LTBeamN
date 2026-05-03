@@ -43,20 +43,20 @@ def solve(coords, sections, edata, nodal_loads, align=0):
  
  
 def print_header(title, param_label):
-    print("\n" + "═" * 72)
+    print("\n" + "═" * 80)
     print(f"  {title}")
-    print("═" * 72)
+    print("═" * 80)
     print(f"  {param_label:>8}  {'μ_cr (PyLTB)':>14}  {'μ_cr (Ref)':>12}"
-          f"  {'μ_cr (LTBeamN)':>15}  {'Δ Ref %':>8}  {'Δ LTB %':>8}")
-    print("  " + "─" * 70)
+          f"  {'μ_cr (LTBeamN)':>15}  {'ΔRef %':>8}  {'ΔLTBeamN %':>8}")
+    print("  " + "─" * 76)
 
 def print_header2(title, param_label):
-    print("\n" + "═" * 72)
+    print("\n" + "═" * 80)
     print(f"  {title}")
-    print("═" * 72)
+    print("═" * 80)
     print(f"  {param_label:>8}  {'μ_cr (PyLTB)':>14}"
-          f"  {'μ_cr (LTBeamN)':>15}  {'Δ LTB %':>8}")
-    print("  " + "─" * 70)
+          f"  {'μ_cr (LTBeamN)':>15}  {'ΔLTBeamN %':>8}")
+    print("  " + "─" * 76)
  
  
 def print_row(label, mu, ref, ltb):
@@ -119,4 +119,4 @@ for L, ltb in zip(Ls, ltbeamns_1c):
     _, mu = solve(coords, sections, edata, loads, align=3)
     print_row2(f"{L} m", mu, ltb)
  
-print("\n" + "═" * 72 + "\n")
+print("\n" + "═" * 78 + "\n")

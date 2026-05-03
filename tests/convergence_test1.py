@@ -53,8 +53,8 @@ def run_model(nelems, etype):
     ])
     # [node, pos, Px, Pz, M]
     nodal_loads = np.array([
-        [0,      0, 1,   0.0, 0.0, -M0],
-        [nelems, 0, 1,   0.0, 0.0,  M0],
+        [0,      0, 1,  0.0, 0.0,  0.0, 0.0, -M0],
+        [nelems, 0, 1,  0.0, 0.0,  0.0, 0.0,  M0],
     ])
  
     model = StabilityModel()

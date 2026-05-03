@@ -58,16 +58,16 @@ edata    = np.array([[1, 0, e, e+1] for e in range(nelems)])
  
 # ── run ────────────────────────────────────────────────────────────────────────
  
-print("\n" + "═" * 72)
+print("\n" + "═" * 80)
 print("  Example 2  –  Cantilever tapered | combined N/Q tip loads  (L=4 m)")
-print("═" * 72)
+print("═" * 80)
 print(f"  {'r=N/Q':>8}  {'μ_cr (PyLTB)':>14}  {'μ_cr (Ref)':>12}"
-      f"  {'μ_cr (LTBeamN)':>15}  {'Δ Ref %':>8}  {'Δ LTB %':>8}")
-print("  " + "─" * 70)
+      f"  {'μ_cr (LTBeamN)':>15}  {'ΔRef %':>8}  {'ΔLTBeamN %':>8}")
+print("  " + "─" * 76)
  
 for r, ref, ltb in zip(ratios, refs, ltbeamns):
     loads = np.array([[nelems, 0, 3, 0.0, 0.0, r*-50000.0, -50000.0, 0.0]])
     _, mu = solve(coords, sections, edata, loads)
     print_row(f"r={r}", mu, ref, ltb)
  
-print("\n" + "═" * 72 + "\n")
+print("\n" + "═" * 80 + "\n")

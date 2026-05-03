@@ -15,20 +15,15 @@ from src.sections.section_utils import interpolate_multiple_sections
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
+from src.plotting2 import plot_buckling_mode_3d
 
 # Materiales
 material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2] # cambio a nu=0.3 por que LTBeamN no me deja cambiar a 0.2
 materials = [material1]
 
 # Secciones
-section1 = ISection_MS(h=0.3, bf1=0.20, bf2=0.15, 
-                       tw=0.01, tf1=0.015, tf2=0.015, r1=0.01, r2=0.01) #[m]
-
-section2 = ISection_MS(h=0.2, bf1=0.15, bf2=0.10, 
-                       tw=0.01, tf1=0.015, tf2=0.015, r1=0.01, r2=0.01) #[m]
-
-
-
+section1 = ISection_MS(h=0.3, bf1=0.20, bf2=0.15, tw=0.01, tf1=0.015, tf2=0.015, r1=0.01, r2=0.01) #[m]
+section2 = ISection_MS(h=0.2, bf1=0.15, bf2=0.10, tw=0.01, tf1=0.015, tf2=0.015, r1=0.01, r2=0.01) #[m]
 
 # ----- CONSTRUCCION DE LA MALLA --------
 L = 5 #[m]
@@ -67,7 +62,7 @@ lator_restraints = np.array([
 # Carga distribuida uniforme unitaria
 elem_loads = []
 for e in range(nelems):
-    elem_loads.append([e, 2, 1,   0.0, 0.0,    5000.0, -1000.0, 5000.0, -1000.0])
+    elem_loads.append([e, 0, 1,   0.0, 0.0,    5000.0, -1000.0, 5000.0, -1000.0])
 elem_loads = np.array(elem_loads)
 
 
@@ -131,5 +126,7 @@ plot_deformed(model, all_diagrams[3])
 
 # Problema de estabilidad
 plot_buckling_modes(model, solver2.mu_crs, solver2.modes) 
+
+fig, ax = plot_buckling_mode_3d(model, solver2.mu_crs, solver2.modes, imode=0, scale=0.2)
 plt.show()
 #"""

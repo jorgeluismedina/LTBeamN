@@ -158,10 +158,10 @@ class StabilityModel():
             fxez, fzez : excentricidad de las cargas Fx y Fz respecto al eje de referencia local
             Fx, Fz, Mx : carga axial, vertical y momento nodal
         """
-        self.loaded_nodes   = list(nodal_loads_data[:,0].astype(int))
-        self.nloads_pos_ref = nodal_loads_data[:,1:3].astype(int) # posiciones de Fx y Fz
-        self.nloads_rel_ez  = nodal_loads_data[:,3:5].astype(float) # z relativo a la pos. de Fx y Fz
-        self.nodal_loads    = nodal_loads_data[:,5:].astype(float) # [Fx, Fz, Mx]
+        self.loaded_nodes = list(nodal_loads_data[:,0].astype(int))
+        self.nloads_pos   = nodal_loads_data[:,1:3].astype(int) # posiciones de Fx y Fz
+        self.nloads_rez   = nodal_loads_data[:,3:5].astype(float) # z relativo a la pos. de Fx y Fz
+        self.nodal_loads  = nodal_loads_data[:,5:].astype(float) # [Fx, Fz, Mx]
         
 
     def add_elem_loads(self, elem_loads_data):
@@ -175,9 +175,9 @@ class StabilityModel():
             qxj, qzj : intensidades en nodo j (axial, transversal)
         """
         self.loaded_elems   = list(elem_loads_data[:,0].astype(int))
-        self.eloads_pos_ref = elem_loads_data[:,1:3].astype(int) # posiciones de qz y qx
-        self.eloads_rel_ez  = elem_loads_data[:,3:5].astype(float) # z relativo a la pos. de qz y qx
-        self.elem_loads     = elem_loads_data[:,5:].astype(float)
+        self.eloads_pos = elem_loads_data[:,1:3].astype(int) # posiciones de qz y qx
+        self.eloads_rez = elem_loads_data[:,3:5].astype(float) # z relativo a la pos. de qz y qx
+        self.elem_loads = elem_loads_data[:,5:].astype(float)
         
 
         for load_data in elem_loads_data:

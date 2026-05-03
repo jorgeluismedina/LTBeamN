@@ -25,9 +25,9 @@ class LTBeam(Beam):
         self.forces = np.zeros(6)
         self.disps  = np.zeros(6)
 
-        self.load_intensities   = np.zeros(4, dtype=int)
-        self.load_positions_ref = np.zeros(2, dtype=int)
-        self.load_relatives_ez  = np.zeros(2, dtype=int)
+        self.load_ints = np.zeros(4, dtype=int)
+        self.load_pos  = np.zeros(2, dtype=int)
+        self.load_rez  = np.zeros(2, dtype=int)
 
 
         
@@ -233,12 +233,12 @@ class LTBeam(Beam):
     
     def compute_lator_KgQ(self):
         """ Matriz geométrica por altura de carga transversal distribuida (8x8) """
-        qzi  = self.load_intensities[1]
-        qzj  = self.load_intensities[3]
+        qzi  = self.load_ints[1]
+        qzj  = self.load_ints[3]
 
         # Excentricidad de la carga vertical distribuida respecto al eje de referencia
-        pos  = self.load_positions_ref[1]
-        rez  = self.load_relatives_ez[1]
+        pos  = self.load_pos[1]
+        rez  = self.load_rez[1]
         qzez = self.section.z_from_ref(1, pos) + rez
          
         # qz(xi) = qzi*(1-xi) + qzj*xi
@@ -253,9 +253,9 @@ class LTBeam(Beam):
 
     def update_lator_Kg(self):
         """ Actualiza la matriz geometrica con fuerzas internas """
-        KgN = self.compute_lator_KgN()
+        KgN  = self.compute_lator_KgN()
         KgMV = self.compute_lator_KgMV()
-        KgQ = self.compute_lator_KgQ()
+        KgQ  = self.compute_lator_KgQ()
         self.Kg_ltr = KgN + KgMV + KgQ
     
     
@@ -269,9 +269,9 @@ class LTBeam(Beam):
         # qxpos = posicion (altura) de aplicacion de la carga axial
         # qzpos = posicion (altura) de aplicacion de la carga vertical
 
-        self.load_intensities   = np.array([qxi, qzi, qxj, qzj], dtype=int)
-        self.load_positions_ref = np.array([qxpos, qzpos], dtype=int)
-        self.load_relatives_ez  = np.array([qxrz, qzrz], dtype=int)
+        self.load_ints = np.array([qxi, qzi, qxj, qzj], dtype=float)
+        self.load_pos  = np.array([qxpos, qzpos], dtype=int)
+        self.load_rez  = np.array([qxrz, qzrz], dtype=float)
         
         L = self.length
 
@@ -345,12 +345,19 @@ class LTBeam(Beam):
               Nh[2]*self.disps[4] + 
               Nh[3]*L*self.disps[5])
 
-        # Limpieza de valores muy pequeños
-        N_diag[np.abs(N_diag) < 1e-9] = 0
-        V_diag[np.abs(V_diag) < 1e-9] = 0
-        M_diag[np.abs(M_diag) < 1e-9] = 0
-        u[np.abs(u) < 1e-12] = 0
-        w[np.abs(w) < 1e-12] = 0
+        # Tolerancias relativas por tipo de diagrama
+        eps = 1e-10
+        tol_N = eps * max(abs(Ni), abs(Nj), 1.0)
+        tol_V = eps * max(abs(Mi), abs(Mj), 1.0) / L   # V ~ M/L
+        tol_M = eps * max(abs(Mi), abs(Mj), 1.0)
+        tol_u = eps * max(abs(self.disps[0]), abs(self.disps[3]), 1e-15)
+        tol_w = eps * max(abs(self.disps[1]), abs(self.disps[4]), 1e-15)
+
+        N_diag[np.abs(N_diag) < tol_N] = 0.0
+        V_diag[np.abs(V_diag) < tol_V] = 0.0
+        M_diag[np.abs(M_diag) < tol_M] = 0.0
+        u[np.abs(u) < tol_u] = 0.0
+        w[np.abs(w) < tol_w] = 0.0
 
         return x, N_diag, V_diag, M_diag, u, w
 
