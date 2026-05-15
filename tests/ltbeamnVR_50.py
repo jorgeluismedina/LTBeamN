@@ -13,7 +13,12 @@ from src.material import Material
 from src.sections.section_bs import ISection_BS
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
-from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
+from src.plotting import (
+    plot_diagram,
+    plot_deformed,
+    plot_buckling_modes,
+    plot_buckling_mode_3d,
+)
 
 # Materiales
 material1 = Material(E=2.1e11, nu=0.3, dens=0.0) #[N/m2]
@@ -84,14 +89,14 @@ model.add_nodal_loads(nodal_loads)
 
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
-solver1 = StaticSolver(model)
-solver1.solve()
-maxN, maxV, maxM, maxw = solver1.max_vals()
+static = StaticSolver(model)
+static.solve()
+maxN, maxV, maxM, maxw = static.max_vals()
 
 # Resolcion del problema de estabilidad
-solver2 = StabilitySolver(model)
-solver2.solve()
-mu_cr = solver2.mu_crs[0]
+stabi = StabilitySolver(model)
+stabi.solve()
+mu_cr = stabi.mu_crs[0]
 
 mu_cr_ansys = 14.852
 mu_cr_ltbeamn = 14.7393
@@ -123,13 +128,15 @@ print("\n" + "="*55 + "\n")
 
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
-all_diagrams = solver1.prepare_diagrams()
+N_diag, V_diag, M_diag, def_shapes = static.prepare_diagrams()
+ 
+plot_diagram(model, N_diag,    title="Axial force")
+plot_diagram(model, V_diag,    title="Shear force")
+plot_diagram(model, M_diag,    title="Bending moment")
+plot_deformed(model, def_shapes, title="Deformed shape")
 
-plot_diagram(model, all_diagrams[0], "Axial Force Diagram")
-plot_diagram(model, all_diagrams[1], "Shear Force Diagram")
-plot_diagram(model, all_diagrams[2], "Bending Moment Diagram")
-plot_deformed(model, all_diagrams[3])
+# Problema de estabilid
+plot_buckling_modes(model, stabi.mu_crs, stabi.modes, nmodes=2)
+plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.20, n_sec=7)
 
-# Problema de estabilidad
-plot_buckling_modes(model, solver2.mu_crs, solver2.modes) 
 plt.show()

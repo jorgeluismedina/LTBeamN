@@ -107,11 +107,11 @@ class LTBeam(Beam):
         """ Integral (Ni' * Nj) función de forma cúbica Hermite, asimetrica """
         L = self.length
         matrix = np.array([
-            [ -0.5,    -L/10,     -0.5,    L/10],
-            [  L/10,    0,        -L/10,   L**2/60],
-            [  0.5,     L/10,      0.5,   -L/10],
-            [ -L/10,   -L**2/60,   L/10,     0]
-        ]) 
+            [ -30,    -6*L,     -30,    6*L],
+            [  6*L,    0,       -6*L,   L**2],
+            [  30,     6*L,      30,   -6*L],
+            [ -6*L,   -L**2,     6*L,     0]
+        ]) / (60)
 
         return matrix
     

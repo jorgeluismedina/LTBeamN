@@ -14,8 +14,12 @@ from src.sections.section_ms import ISection_MS
 from src.sections.section_utils import interpolate_multiple_sections
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
-from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
-from src.plotting2 import plot_buckling_mode_3d
+from src.plotting import (
+    plot_diagram,
+    plot_deformed,
+    plot_buckling_modes,
+    plot_buckling_mode_3d,
+)
 
 # Materiales
 material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2] # cambio a nu=0.3 por que LTBeamN no me deja cambiar a 0.2
@@ -79,17 +83,17 @@ model.add_elem_loads(elem_loads)
 
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
-solver1 = StaticSolver(model)
-solver1.solve()
-maxN, maxV, maxM, maxw = solver1.max_vals() 
+static = StaticSolver(model)
+static.solve()
+maxN, maxV, maxM, maxw = static.max_vals() 
 
 print(model.elements[0].forces)
 print(model.elements[0].forcesG)
 
 # Resolcion del problema de estabilidad
-solver2 = StabilitySolver(model)
-solver2.solve()
-mu_cr = solver2.mu_crs[0]
+stabi = StabilitySolver(model)
+stabi.solve()
+mu_cr = stabi.mu_crs[0]
 
 # Resultados y comparacion
 mu_cr_ltbeamn = 133.9
@@ -117,16 +121,16 @@ print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn)/mu
 #"""
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
-all_diagrams = solver1.prepare_diagrams()
+N_diag, V_diag, M_diag, def_shapes = static.prepare_diagrams()
+ 
+plot_diagram(model, N_diag,    title="Axial force")
+plot_diagram(model, V_diag,    title="Shear force")
+plot_diagram(model, M_diag,    title="Bending moment")
+plot_deformed(model, def_shapes, title="Deformed shape")
 
-plot_diagram(model, all_diagrams[0], "Axial Force Diagram")
-plot_diagram(model, all_diagrams[1], "Shear Force Diagram")
-plot_diagram(model, all_diagrams[2], "Bending Moment Diagram")
-plot_deformed(model, all_diagrams[3])
+# Problema de estabilid
+plot_buckling_modes(model, stabi.mu_crs, stabi.modes, nmodes=2)
+plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.20, n_sec=5)
 
-# Problema de estabilidad
-plot_buckling_modes(model, solver2.mu_crs, solver2.modes) 
-
-fig, ax = plot_buckling_mode_3d(model, solver2.mu_crs, solver2.modes, imode=0, scale=0.2)
 plt.show()
 #"""

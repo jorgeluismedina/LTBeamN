@@ -13,7 +13,12 @@ from src.material import Material
 from src.sections.section_ms import ISection_MS
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
-from src.plotting import plot_buckling_modes, plot_diagram, plot_deformed
+from src.plotting import (
+    plot_diagram,
+    plot_deformed,
+    plot_buckling_modes,
+    plot_buckling_mode_3d,
+)
 
 # Materiales
 material1 = Material(E=2.1e11, nu=0.3, dens=0.0) #[N/m2]
@@ -88,14 +93,14 @@ model.add_elem_loads(elem_loads)
 
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
-solver1 = StaticSolver(model)
-solver1.solve()
-maxN, maxV, maxM, maxw = solver1.max_vals()
+static = StaticSolver(model)
+static.solve()
+maxN, maxV, maxM, maxw = static.max_vals()
 
 # Resolcion del problema de estabilidad
-solver2 = StabilitySolver(model)
-solver2.solve()
-mu_cr = solver2.mu_crs[0]
+stabi = StabilitySolver(model)
+stabi.solve()
+mu_cr = stabi.mu_crs[0]
 
 mu_cr_ansys = 4.7196
 mu_cr_ltbeamn = 4.7050
