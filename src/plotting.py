@@ -47,25 +47,36 @@ def get_flange_widths(sec):
     return sec.bf, sec.bf
  
  
-def section_outline(sec):
-    """Segmentos del perfil I en coords locales (y, z) rel. al centro de corte."""
+def section_outline(sec, align):
+    """Segmentos del perfil I en coordenadas locales (y, z)."""
     bf1, bf2 = get_flange_widths(sec)
-    zG, h, zS = sec.zG, sec.h, sec.zS
-    z_top = h - zG - zS
-    z_bot =    -zG - zS
+    zb = sec.z_from_ref(align, 2)
+    zt = sec.z_from_ref(align, 3)
+
     return [
-        np.array([[-bf1/2, z_top], [bf1/2, z_top]]),  # ala superior
-        np.array([[-bf2/2, z_bot], [bf2/2, z_bot]]),  # ala inferior
-        np.array([[0,      z_bot], [0,     z_top]]),   # alma
+        np.array([[-bf1 / 2, zt], [bf1 / 2, zt]]),  # ala superior
+        np.array([[-bf2 / 2, zb], [bf2 / 2, zb]]),  # ala inferior
+        np.array([[0.0, zb], [0.0, zt]]),           # alma
     ]
  
  
 def deform_segment(seg, v, theta, zS):
-    """Rotación theta alrededor del CS + traslación lateral v."""
+    """Deforma un segmento 2D (y, z) con traslación lateral v y rotación theta."""
     c, s = np.cos(theta), np.sin(theta)
-    y = seg[:, 0] * c - seg[:, 1] * s + v
-    z = seg[:, 0] * s + seg[:, 1] * c + zS
-    return y, z
+
+    y = seg[:, 0]
+    z = seg[:, 1] - zS   # llevar el punto al pivote
+
+    y_def = y * c - z * s + v
+    z_def = y * s + z * c + zS  # volver a la posición original del pivot
+
+    return np.column_stack((y_def, z_def))
+
+def deform_keypoints(kp, v, theta, zS):
+    """Deforma puntos 3D [x, y, z] dejando x intacta."""
+    out = kp.copy()
+    out[:, 1:3] = deform_segment(kp[:, 1:3], v, theta, zS)
+    return out
  
  
 def section_at(elem, xi):
@@ -142,20 +153,21 @@ def plot_deformed(model, def_shapes, title="Deformed shape"):
     title      : título del gráfico
     """
     all_x    = np.concatenate([d[0] for d in def_shapes])
-    all_y    = np.concatenate([d[1] for d in def_shapes])
-    #all_vals = np.concatenate([d[2] for d in def_shapes])
-    y_range  = all_y.max() - all_y.min() or 1.0
+    all_z    = np.concatenate([d[1] for d in def_shapes])
+    all_xvals = np.concatenate([d[2] for d in def_shapes])
+    all_zvals = np.concatenate([d[3] for d in def_shapes])
+    y_range  = all_z.max() - all_z.min() or 1.0
 
     fig, ax = plt.subplots(figsize=(_FIG_W, _FIG_H))
  
     for e, elem in enumerate(model.elements):
-        X_def, Y_def = def_shapes[e]
+        X_def, Y_def, _, _ = def_shapes[e]
         ax.plot(elem.coords, np.zeros(2), color=_BEAM_COLOR,    lw=1, alpha=0.8)
         ax.plot(X_def, Y_def,             color=_DEFORMED_COLOR, lw=1)
 
-    for idx in critical_indices(all_y):
-        offset = label_offset(y_range, all_y[idx])
-        ax.text(all_x[idx], all_y[idx] + offset, f'{all_y[idx]:.3e}',
+    for idx in critical_indices(all_z):
+        offset = label_offset(y_range, all_z[idx])
+        ax.text(all_x[idx], all_z[idx] + offset, f'{all_zvals[idx]:.3e}',
                 color=_CRIT_COLOR, fontsize=8, ha='center', va='center')
  
     #ax.set_xlabel('x', fontsize=10)
@@ -167,7 +179,7 @@ def plot_deformed(model, def_shapes, title="Deformed shape"):
 
 
 
-def plot_buckling_modes(model, mu_crs, modes, nmodes=2):
+def plot_buckling_modes(model, mu_crs, modes, nmodes=1):
     """
     Diagramas 2D de los modos de pandeo lateral-torsional (v, v', θ, θ').
     Cada componente se normaliza por su propio pico.
@@ -227,11 +239,11 @@ def draw_axis_arrows(ax, x0, y0, z0, length):
         dx, dy, dz = [d * length for d in direction]
 
         ax.quiver(x0, y0, z0, dx, dy, dz,
-                  color=color, linewidth=1.2,
+                  color=color, linewidth=1.1,
                   arrow_length_ratio=0.2, normalize=False)
         
         ax.text(x0 + dx*1.15, y0 + dy*1.15, z0 + dz*1.15,
-                label, color=color, fontsize=9*length*7, fontweight='bold',
+                label, color=color, fontsize=6, fontweight='bold',
                 ha='center', va='center')
 
 
@@ -239,69 +251,92 @@ def draw_axis_arrows(ax, x0, y0, z0, length):
 
 def plot_buckling_mode_3d(model, mu_crs, modes, imode=0, scale=1.0, n_sec=5):
     mode   = modes[:, imode]
-    v_peak = np.max(np.abs(mode[0::4])) or 1.0
-    mode_n = mode / v_peak * scale
+
+    peak = np.max(np.abs(mode[0::4]))
+    peak = peak if peak > 0 else 1.0
+    mode_n = mode * (scale / peak)
  
     fig = plt.figure(figsize=(14, 7))
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
- 
-    ax = cast(Axes3D, fig.add_subplot(111, projection='3d'))
+    ax = fig.add_subplot(111, projection="3d")
  
     # Sin paredes, sin ejes
     for pane in (ax.xaxis.pane, ax.yaxis.pane, ax.zaxis.pane): # type: ignore[union-attr]
         pane.fill = False
         pane.set_edgecolor('none')
     ax.set_axis_off()
+
+    xis = np.linspace(0.0, 1.0, n_sec)
+
+    keypoints_undef_list: list[np.ndarray] = []
+    keypoints_def_list: list[np.ndarray] = []
+
+    cs_idx = 6
  
     for elem in model.elements:
         L   = elem.length
         x0  = elem.coords[0]
-        xis = np.linspace(0, 1, n_sec)
  
         v_arr, th_arr = interp_mode(elem.ltr_dofs, mode_n, L, xis)
- 
-        tips_undef = {k: [] for k in ('tl', 'tr', 'bl', 'br')}
-        tips_def   = {k: [] for k in ('tl', 'tr', 'bl', 'br')}
  
         for k, xi in enumerate(xis):
             sec = section_at(elem, xi)
             bf1, bf2 = get_flange_widths(sec)
-            zG, h, zS = sec.zG, sec.h, sec.zS
-            z_top, z_bot = h - zG - zS, -zG - zS
+            align = elem.align
+
+            zG = sec.z_from_ref(align, 0)
+            zS = sec.z_from_ref(align, 1)
+            zb = sec.z_from_ref(align, 2)
+            zt = sec.z_from_ref(align, 3)
+
             x_k = x0 + xi * L
-            z_align = sec.z_from_ref(elem.align, 0)
  
-            for seg in section_outline(sec):
-                y0, z0 = seg[:, 0], seg[:, 1] + zS + z_align
-                ax.plot([x_k, x_k], y0, z0,
+            # Contorno de la sección
+            for seg in section_outline(sec, align):
+                yz_def = deform_segment(seg, v_arr[k], th_arr[k], zS)
+
+                ax.plot([x_k, x_k], seg[:, 0], seg[:, 1],
                         color=_UNDEF_COLOR, lw=0.5, alpha=1)
-                y_def, z_def = deform_segment(seg, v_arr[k], th_arr[k], zS)
-                ax.plot([x_k, x_k], y_def, z_def + z_align,
+
+                ax.plot([x_k, x_k], yz_def[:, 0], yz_def[:, 1],
                         color=_BEAM3D_COLOR, lw=0.5, alpha=1)
  
-            corners = [('tl', [-bf1/2, z_top]),
-                       ('tr', [ bf1/2, z_top]),
-                       ('bl', [-bf2/2, z_bot]),
-                       ('br', [ bf2/2, z_bot])]
+            
+            # Puntos característicos de la sección
+            kp = np.array([
+                [x_k, -bf1 / 2, zt],  # top-left
+                [x_k,  bf1 / 2, zt],  # top-right
+                [x_k, -bf2 / 2, zb],  # bottom-left
+                [x_k,  bf2 / 2, zb],  # bottom-right
+                [x_k, 0.0, zt],       # centro del ala superior
+                [x_k, 0.0, zb],       # centro del ala inferior
+                [x_k, 0.0, zG],       # centro de corte
+                [x_k, 0.0, zS],       # centro de gravedad
+            ])
+            
+            keypoints_undef_list.append(kp)
+            keypoints_def_list.append(deform_keypoints(kp, v_arr[k], th_arr[k], zS))
  
-            for key, pt in corners:
-                pt_arr = np.array([pt])
-                tips_undef[key].append([x_k, pt_arr[0, 0], pt_arr[0, 1] + zS + z_align])
-                y_def, z_def = deform_segment(pt_arr, v_arr[k], th_arr[k], zS)
-                tips_def[key].append([x_k, y_def[0], z_def[0] + z_align])
- 
-        for pts in tips_undef.values():
-            pts = np.array(pts)
+        keypoints_undef = np.stack(keypoints_undef_list, axis=0)
+        keypoints_def = np.stack(keypoints_def_list, axis=0)
+
+        
+        # Unir los puntos correspondientes a lo largo de la viga
+        for j in range(keypoints_undef.shape[1]):
+            pts = keypoints_undef[:, j, :]
+            color = "purple" if j == 6 else _UNDEF_COLOR
+            color = "green" if j == 7 else _UNDEF_COLOR
             ax.plot(pts[:, 0], pts[:, 1], pts[:, 2],
-                    color=_UNDEF_COLOR, lw=0.5, alpha=1)
- 
-        for pts in tips_def.values():
-            pts = np.array(pts)
+                    color=color, lw=0.5, alpha=1)
+
+        for j in range(keypoints_def.shape[1]):
+            pts = keypoints_def[:, j, :]
             ax.plot(pts[:, 0], pts[:, 1], pts[:, 2],
-                    color=_BEAM3D_COLOR, lw=0.5)
+                    color=_BEAM3D_COLOR, lw=0.5, alpha=1)
  
     # Trípode de ejes
-    arrow_len = (model.coords[-1] - model.coords[0]) * 0.02
+    #arrow_len = (model.coords[-1] - model.coords[0]) * 0.05
+    arrow_len = 0.06
     ax.set_aspect('equal')  # type: ignore[arg-type]
     draw_axis_arrows(ax, 0.0, 0.0, 0.0, arrow_len)
     

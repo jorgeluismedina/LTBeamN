@@ -272,10 +272,11 @@ class LTBeamTap(Beam):
         self.loads[5] = -(2*qzi + 3*qzj) * L**2 / 60
 
         # Corrección por excentricidad de carga axial distribuida
-        qxezi = -(self.section_i.z_from_ref(self.align, int(qxpos)) + qxrz)
-        qxezj = -(self.section_j.z_from_ref(self.align, int(qxpos)) + qxrz)
-        mi = qxi * qxezi
-        mj = qxj * qxezj
+        qxezi = self.section_i.z_from_ref(self.align, int(qxpos)) + qxrz
+        qxezj = self.section_j.z_from_ref(self.align, int(qxpos)) + qxrz
+        # excentricidad positiva (+z) y carga axial positiva (traccion) generan momentos negativos
+        mi = - qxi * qxezi
+        mj = - qxj * qxezj
  
         self.loads[1] += -0.5  * (mi + mj)        
         self.loads[2] +=  L/12 * (mi - mj)        

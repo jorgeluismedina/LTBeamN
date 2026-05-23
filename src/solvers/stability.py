@@ -15,20 +15,27 @@ class StabilitySolver():
             K0_ltr[np.ix_(elem.ltr_dofs, elem.ltr_dofs)] += elem.K0_ltr
 
         for i, node in enumerate(self.model.spring_nodes):
-            dof_v = self.model.altr_dofs[node, 0]  # DOF v
-            dof_t = self.model.altr_dofs[node, 2]  # DOF theta
-            kv = self.model.spring_kv[i]
-            kt = self.model.spring_kt[i]
+            dof_v  = self.model.altr_dofs[node, 0]  # DOF v
+            dof_dv = self.model.altr_dofs[node, 1]  # DOF v'
+            dof_t  = self.model.altr_dofs[node, 2]  # DOF theta
+            dof_dt = self.model.altr_dofs[node, 3]  # DOF theta'
+
+            kv  = self.model.spring_k_vec[i, 0]
+            kdv = self.model.spring_k_vec[i, 1]
+            kt  = self.model.spring_k_vec[i, 2]
+            kdt = self.model.spring_k_vec[i, 3]
 
             pos = self.model.spring_pos[i]
             sec = self.model.sections[node]
-            ez  = -sec.z_from_ref(1, pos) # estudiar mejor el cambio de signo
+            ez  = sec.z_from_ref(1, pos)
 
-            K0_ltr[dof_v, dof_v] += kv
-            K0_ltr[dof_v, dof_t] += kv * ez
-            K0_ltr[dof_t, dof_v] += kv * ez
-            K0_ltr[dof_t, dof_t] += kv * ez**2 + kt
-        
+            K0_ltr[dof_v,  dof_v]  += kv
+            K0_ltr[dof_v,  dof_t]  -= kv * ez   # acoplamiento (estudiar mejor el cambio de signo)
+            K0_ltr[dof_t,  dof_v]  -= kv * ez   # acoplamiento (estudiar mejor el cambio de signo)
+            K0_ltr[dof_t,  dof_t]  += kv * ez**2 + kt
+            K0_ltr[dof_dv, dof_dv] += kdv       # v'
+            K0_ltr[dof_dt, dof_dt] += kdt       # θ'
+                    
         return K0_ltr
 
     def assemble_lator_Kg(self):

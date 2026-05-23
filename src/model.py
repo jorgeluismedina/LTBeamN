@@ -132,16 +132,17 @@ class StabilityModel():
     def add_lateral_springs(self, springs_data):
         """
         Apoyos elasticos nodales en el problema lateral-torsional.
-        Formato: [node, pos, kv, kt]
+        Formato: [node, pos, kv, kdv, kt, kdt]
             kv  : rigidez traslacional lateral [F/L]  (v-DOF)
+            kdv : rigidez curvatura lateral    [F]    (v'-DOF)
             kt  : rigidez torsional            [F·L]  (θ-DOF)
-            pos : pos. vertical, 0→G, 1→SC, 2→ala inf, 3→ala sup
-
+            kdt : rigidez warping torsional    [F]    (θ'-DOF)
+            pos : pos. vertical, 0→G, 1→SC, 2→ala inf, 3→ala sup)
+            * la posicion es solo para la traslacion lateral
         """
         self.spring_nodes = list(springs_data[:, 0].astype(int))
         self.spring_pos   = springs_data[:, 1].astype(int)
-        self.spring_kv    = springs_data[:, 2].astype(float)
-        self.spring_kt    = springs_data[:, 3].astype(float)
+        self.spring_k_vec = springs_data[:, 2:].astype(float)
 
 
     def add_nodal_loads(self, nodal_loads_data):

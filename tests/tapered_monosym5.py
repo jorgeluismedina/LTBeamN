@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from src.model import StabilityModel
 from src.material import Material
 from src.sections.section_ms import ISection_MS
+from src.sections.section_utils import interpolate_multiple_sections
 from src.solvers.static import StaticSolver
 from src.solvers.stability import StabilitySolver
 from src.plotting import (
@@ -21,63 +22,71 @@ from src.plotting import (
 )
 
 # Materiales
-material1 = Material(E=2.1e11, nu=0.3, dens=0.0) #[N/m2]
+material1 = Material(E=2.1e11, nu=0.3, dens=1.0) #[N/m2]
 materials = [material1]
 
 # Secciones
-sect1 = ISection_MS(h=0.3, bf1=0.20, bf2=0.15, tw=0.01, tf1=0.015, tf2=0.012, r1=0.0, r2=0.0) #[m]
+section1 = ISection_MS(h=0.1, bf1=0.20, bf2=0.08, tw=0.01, tf1=0.01, tf2=0.01, r1=0.00, r2=0.00) #[m]
+section2 = ISection_MS(h=0.3, bf1=0.20, bf2=0.08, tw=0.01, tf1=0.01, tf2=0.01, r1=0.00, r2=0.00) #[m]
+
+
 
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
-L = 19.5 #[m]
-# numero de elementos pares para que exista un nodo en el centro
-nelems = 100
-# Con 150 elementos mu_cr = 5.7513, error con Ansys delta = 0.73%
-# Con 250 elementos mu_cr = 4.7507, error con Ansys delta = 0.71%
-# Con 400 elememtos mu_cr = 4.7506, error con Ansys delta = 0.71%
-
+L = 4 #[m]
+nelems = 20 
 
 # Coordenadas de nodos
 coordinates = np.linspace(0, L, nelems+1)
+norm_coords = coordinates / L
 
 # Generacion de secciones
-node_sections = [sect1] * coordinates.shape[0]
+node_sections = interpolate_multiple_sections(section1, section2, norm_coords)
+
+
+
 
 # Informacion de elementos
 elements_data = []
 for e in range(nelems):
-    elements_data.append([0, 0, e, e+1]) # etype, mat_id, sec_id, nodei, nodej
+    # formato: [etype, mat_id, nodei, nodej]
+    elements_data.append([1, 0, e, e+1])
+
 elements_data = np.array(elements_data)
 
 
-
 # ----- RESTRICCIONES --------
-# Restricciones problema estatico
 verax_restraints = np.array([
-    [0,         1, 1, 0],
-    [nelems/2,  1, 1, 0],
-    [nelems,    1, 1, 0]
+    # simplemente apoyada: resultados iguales a LTBeamN
+    #[0,       1, 1, 0],
+    #[nelems,  0, 1, 0]
+    # config1: resultados iguales a LTBeamN
+    #[0,       0, 1, 1],
+    #[nelems,  1, 1, 0]
+    # config2: resultados iguales a LTBeamN
+    #[0,       0, 1, 1],
+    #[nelems,  1, 0, 0]
+    # config2: resultados diferentes a LTBeamN
+    [0,       0, 1, 0],
+    [nelems,  1, 0, 1]
+
 ])
 
-# restricciones problema de estabilidad
 lator_restraints = np.array([
-    [0,         1, 0, 1, 0],
-    [nelems/2,  1, 0, 1, 0],
-    [nelems,    1, 0, 1, 0]
+    #[0,       1, 0, 1, 0],
+    #[nelems,  1, 0, 1, 0]
+    [0,       1, 0, 1, 0],
+    [nelems,  0, 1, 0, 1]
 ])
 
 
-
-# ----- CARGAS DE ELEMENTO --------
-# Cargas distribuida uniforme
-elem_loads = []
-for e in range(nelems//2):
-    elem_loads.append([e, 0, 1,    0.0, 0.0,     0.0, -3000.0, 0.0, -3000.0])
-
-elem_loads = np.array(elem_loads)
-
-
+# ----- CARGAS NODALES --------
+# Carga de flexion pura unitaria
+nodal_loads = np.array([
+    [nelems//2,      0, 3,   0.0, 0.0,   0.0, -500.0, 0.0]
+    #[nelems,      0, 3,   0.0, 0.0,   0.0, -500.0, 0.0]
+])
 
 
 # ----- CREACION Y SETEO DEL MODELO -------- 
@@ -85,26 +94,25 @@ model = StabilityModel()
 model.add_materials(materials)
 model.add_sections(node_sections)
 model.add_nodes(coordinates)
-model.add_uniform_elements(elements_data)
+model.add_tapered_elements(elements_data)
 model.add_verax_restraints(verax_restraints)
 model.add_lator_restraints(lator_restraints)
-model.add_elem_loads(elem_loads)
+model.add_nodal_loads(nodal_loads)
 
 
 # ----- RESOLUCION DEL MODELO --------
 # Resolucion del problema estatico
 static = StaticSolver(model)
 static.solve()
-maxN, maxV, maxM, maxw = static.max_vals()
+maxN, maxV, maxM, maxw = static.max_vals() 
 
 # Resolcion del problema de estabilidad
 stabi = StabilitySolver(model)
 stabi.solve()
 mu_cr = stabi.mu_crs[0]
 
-mu_cr_ansys = 5.7099
-mu_cr_ltbeamn = 5.7092
-
+# Resultados y comparacion
+mu_cr_ltbeamn = 183.0
 
 print("\n" + "="*55)
 print(" ANALYSIS RESULTS ".center(55))
@@ -122,15 +130,13 @@ print(f"  Displacement max. w_max:         {maxw*1e3:>16.4f} mm")
 
 print("\n STABILITY ANALYSIS")
 print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
-print(f"  Critical load factor μ_cr (Ansys):      {mu_cr_ansys:>12.4f}")
 print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn:>12.4f}")
-print(f"  Error respect Ansys:                    {abs(mu_cr - mu_cr_ansys)/mu_cr_ansys*100:>11.2f} %")
 print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn*100:>11.2f} %")
 print("\n" + "="*55 + "\n")
 
 
- 
 
+#"""
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
 N_diag, V_diag, M_diag, def_shapes = static.prepare_diagrams()
@@ -140,8 +146,9 @@ plot_diagram(model, V_diag,    title="Shear force")
 plot_diagram(model, M_diag,    title="Bending moment")
 plot_deformed(model, def_shapes, title="Deformed shape")
 
-# Problema de estabilid
-plot_buckling_modes(model, stabi.mu_crs, stabi.modes, nmodes=2)
-plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.13, n_sec=2)
+# Problema de estabilidad
+plot_buckling_modes(model, stabi.mu_crs, stabi.modes, nmodes=1)
+plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.14, n_sec=3)
 
 plt.show()
+#"""

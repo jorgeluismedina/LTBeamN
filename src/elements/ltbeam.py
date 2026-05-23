@@ -283,9 +283,10 @@ class LTBeam(Beam):
         self.loads[5] = -(2*qzi + 3*qzj) * L**2 / 60
 
         # Corrección por excentricidad de carga axial distribuida
-        qxez = -(self.section.z_from_ref(0, int(qxpos)) + qxrz) # para seguir la convencion de momentos, ez es negativo
-        mi = qxi * qxez
-        mj = qxj * qxez
+        qxez = self.section.z_from_ref(0, int(qxpos)) + qxrz
+        # excentricidad positiva (+z) y carga axial positiva (traccion) generan momentos negativos
+        mi =  - qxi * qxez
+        mj =  - qxj * qxez
 
         self.loads[1] += -0.5  * (mi + mj)        
         self.loads[2] +=  L/12 * (mi - mj)        

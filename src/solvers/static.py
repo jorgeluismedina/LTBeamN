@@ -131,66 +131,9 @@ class StaticSolver():
             N_globals.append(np.vstack([X, N/max_N*esc1, N]))
             V_globals.append(np.vstack([X, V/max_V*esc1, V]))
             M_globals.append(np.vstack([X, M/max_M*esc2, M]))
-            def_shapes.append(np.vstack([X + u/max_def*esc3, w/max_def*esc3]))
+            def_shapes.append(np.vstack([X + u/max_def*esc3, w/max_def*esc3, u, w]))
 
         return N_globals, V_globals, M_globals, def_shapes
-    
-
-    
-    """
-    def prepare_diagrams(self, fields, esc1=0.5, esc2=0.7, esc3=0.5):
-        all_x, all_N, all_V, all_M, all_u, all_w = fields
-        max_N = np.max(np.abs(np.asarray(all_N)))
-        max_V = np.max(np.abs(np.asarray(all_V)))
-        max_M = np.max(np.abs(np.asarray(all_M)))
-        max_u = np.max(np.abs(np.asarray(all_u)))
-        max_w = np.max(np.abs(np.asarray(all_w)))
-        max_def = max(max_u, max_w)
-
-        N_globals = []
-        V_globals = []
-        M_globals = []
-        def_shapes = []
-
-        for e, elem in enumerate(self.model.elements):
-            x = all_x[e]
-            N = all_N[e] / max_N # axial normalizada
-            V = all_V[e] / max_V # corte  normalizada
-            M = all_M[e] / max_M # momento normalizada
-            u = all_u[e] / max_def # def axial normalizada
-            w = all_w[e] / max_def # def vertical normalizada
-
-            c, s = elem.dir_vec 
-            # Coordenadas globales de puntos a lo largo del elemento
-            X0, Y0 = elem.coords[0]
-            X = X0 + c*x
-            Y = Y0 + s*x
-
-            # Desplazamientos globales (vectorizado)
-            u_global = c*u - s*w    # Componente X global
-            w_global = s*u + c*w    # Componente Y global
-
-            # Diagramas rotados (perpendiculares al elemento)
-            N_diag_X = X - s*N*esc1
-            N_diag_Y = Y + c*N*esc1
-
-            V_diag_X = X - s*V*esc1
-            V_diag_Y = Y + c*V*esc1
-
-            M_diag_X = X + s*M*esc2  # Escala más pequeña para momento
-            M_diag_Y = Y - c*M*esc2  # Momentos ploteados alrevez por convencion
-
-            X_def = X + u_global*esc3
-            Y_def = Y + w_global*esc3
-
-            N_globals.append(np.vstack([N_diag_X, N_diag_Y, all_N[e]]))
-            V_globals.append(np.vstack([V_diag_X, V_diag_Y, all_V[e]]))
-            M_globals.append(np.vstack([M_diag_X, M_diag_Y, all_M[e]]))
-            def_shapes.append(np.vstack([X_def, Y_def]))
-
-        return N_globals, V_globals, M_globals, def_shapes
-
-    """
 
 
 

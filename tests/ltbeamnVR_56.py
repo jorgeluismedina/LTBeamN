@@ -132,14 +132,15 @@ print("\n" + "="*55 + "\n")
 
 # ----- PLOTEO DE RESULTADOS --------
 # Problema estatico
-all_diagrams = solver1.prepare_diagrams()
+N_diag, V_diag, M_diag, def_shapes = static.prepare_diagrams()
+ 
+plot_diagram(model, N_diag,    title="Axial force")
+plot_diagram(model, V_diag,    title="Shear force")
+plot_diagram(model, M_diag,    title="Bending moment")
+plot_deformed(model, def_shapes, title="Deformed shape")
 
+# Problema de estabilid
+plot_buckling_modes(model, stabi.mu_crs, stabi.modes, nmodes=2)
+plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.13, n_sec=2)
 
-plot_diagram(model, all_diagrams[0], "Axial Force Diagram")
-plot_diagram(model, all_diagrams[1], "Shear Force Diagram")
-plot_diagram(model, all_diagrams[2], "Bending Moment Diagram")
-plot_deformed(model, all_diagrams[3])
-
-# Problema de estabilidad
-plot_buckling_modes(model, solver2.mu_crs, solver2.modes)  
 plt.show()

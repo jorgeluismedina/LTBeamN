@@ -34,7 +34,7 @@ idx = 0
 Ls  = np.array([6, 9, 12]) #[m]
 L   = Ls[idx]
 
-nelems = int(20 * L / 2)
+nelems = int(10 * L / 2)
 nnods  = nelems + 1
 
 # Coordenadas de nodos
@@ -147,7 +147,7 @@ plot_deformed(model, def_shapes, title="Deformed shape")
 
 # Problema de estabilid
 plot_buckling_modes(model, stabi.mu_crs, stabi.modes, nmodes=2)
-plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.20, n_sec=7)
+plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.13, n_sec=3)
 
 plt.show()
 #"""

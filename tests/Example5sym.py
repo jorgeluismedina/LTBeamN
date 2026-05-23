@@ -30,7 +30,7 @@ section_min = ISection_MS(h=0.60*0.4, bf1=0.15, bf2=0.15, tw=0.0095, tf1=0.0127,
 
 
 # ----- CONSTRUCCION DE LA MALLA --------
-idx = 1
+idx = 0
 Ls  = np.array([6, 9, 12]) / 2 #[m]
 L   = Ls[idx]
 
@@ -78,6 +78,7 @@ rez_exacto = np.abs(z_SC_apoyo - z_SC_centr)
 print(-rez_exacto)
 
 nodal_loads = np.array([
+    #[nelems, 0, 1,   0.0, 0.0,   0.0, -500.0, 0.0]
     [nelems, 0, 1,   0.0, -rez_exacto,   0.0, -500.0, 0.0]
 ])
 
@@ -148,7 +149,7 @@ plot_deformed(model, def_shapes, title="Deformed shape")
 
 # Problema de estabilid
 plot_buckling_modes(model, stabi.mu_crs, stabi.modes, nmodes=2)
-plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.20, n_sec=7)
+plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.12, n_sec=3)
 
 plt.show()
 #"""

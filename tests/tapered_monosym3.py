@@ -116,7 +116,7 @@ print("\n STABILITY ANALYSIS")
 print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
 print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn:>12.4f}")
 print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn)/mu_cr_ltbeamn*100:>11.2f} %")
-
+print("\n" + "="*55 + "\n")
 
 #"""
 # ----- PLOTEO DE RESULTADOS --------

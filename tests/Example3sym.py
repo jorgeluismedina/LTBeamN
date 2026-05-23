@@ -69,7 +69,7 @@ lator_restraints = np.array([
 # ----- CARGAS NODALES --------
 # Carga puntual en la punta sobre la mesa superior
 nodal_loads = np.array([
-    [nelems, 0, 3,   0.0, 0.0,   0.0, -1000.0/2, 0.0]
+    [nelems, 0, 3,   0.0, 0.0,   0.0, -500.0, 0.0]
 ])
 
 
@@ -139,7 +139,7 @@ plot_deformed(model, def_shapes, title="Deformed shape")
 
 # Problema de estabilid
 plot_buckling_modes(model, stabi.mu_crs, stabi.modes, nmodes=2)
-plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.20, n_sec=7)
+plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.12, n_sec=3)
 
 plt.show()
 #"""

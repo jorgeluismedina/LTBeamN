@@ -65,7 +65,7 @@ lator_restraints = np.array([
 # resortes laterales
 kpen = material1.E * sect1.Iy * 1e6
 springs_data = np.array([
-    [nelems//4, 2,  kpen, 0.0]
+    [nelems//4, 2,  kpen, 0.0, 0.0, 0.0]
 ])
 
 
@@ -142,6 +142,6 @@ plot_deformed(model, def_shapes, title="Deformed shape")
 
 # Problema de estabilid
 plot_buckling_modes(model, stabi.mu_crs, stabi.modes, nmodes=2)
-plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.20, n_sec=7)
+plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.14, n_sec=2)
 
 plt.show()

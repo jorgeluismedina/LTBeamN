@@ -34,7 +34,7 @@ idx = 0
 Ls  = np.array([6, 9, 12]) #[m]
 L   = Ls[idx]
 
-nelems = int(20 * L / 2)
+nelems = int(10 * L / 2)
 nnods  = nelems + 1
 
 # Coordenadas de nodos
@@ -89,7 +89,8 @@ print(rez_exacto)
 
 
 nodal_loads = np.array([
-    [nelems//2,    0, 3,    0.0, rez_exacto,    0.0, -1000.0, 0.0]
+    [nelems//2,    0, 3,    0.0, 0.0,    0.0, -1000.0, 0.0] # solo sobre la mesa superior
+    #[nelems//2,    0, 3,    0.0, rez_exacto,    0.0, -1000.0, 0.0] # con excentricidad artificial
 ])
 
 
@@ -137,8 +138,8 @@ print(f"  Displacement max. w_max:         {maxw*1e3:>16.4f} mm")
 
 print("\n STABILITY ANALYSIS")
 print(f"  Lenght (L):                             {L:>11.2f} m")
-print(f"  Critical load factor μ_cr (Reference):  {mu_cr_ref[idx]:>12.4f}")
 print(f"  Critical load factor μ_cr (PyLTB):      {mu_cr:>12.4f}")
+print(f"  Critical load factor μ_cr (Reference):  {mu_cr_ref[idx]:>12.4f}")
 print(f"  Critical load factor μ_cr (LTBeamN):    {mu_cr_ltbeamn[idx]:>12.4f}")
 print(f"  Result diff. with Reference:            {abs(mu_cr - mu_cr_ref[idx])/mu_cr_ref[idx]*100:>11.2f} %")
 print(f"  Result diff. with LTBeamN:              {abs(mu_cr - mu_cr_ltbeamn[idx])/mu_cr_ltbeamn[idx]*100:>11.2f} %")
@@ -158,7 +159,7 @@ plot_deformed(model, def_shapes, title="Deformed shape")
 
 # Problema de estabilid
 plot_buckling_modes(model, stabi.mu_crs, stabi.modes, nmodes=2)
-plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.20, n_sec=7)
+plot_buckling_mode_3d(model, stabi.mu_crs, stabi.modes, imode=0, scale=0.13, n_sec=4)
 
 plt.show()
 #"""
